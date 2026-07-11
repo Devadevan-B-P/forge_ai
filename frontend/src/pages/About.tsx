@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import ScrollStack, { ScrollStackItem } from "../components/vendor/ScrollStack";
 import {
@@ -27,6 +28,9 @@ import BorderGlow from "../components/vendor/BorderGlow";
 import BlurText from "../components/vendor/BlurText";
 import ShinyText from "../components/vendor/ShinyText";
 import AnimatedContent from "../components/vendor/AnimatedContent";
+import ShapeBlur from "../components/vendor/ShapeBlur";
+import ScrollFloat from "../components/vendor/ScrollFloat";
+import VariableProximity from "../components/vendor/VariableProximity";
 import { useInView } from "../hooks/useInView";
 
 /* ─── The Forge Process ──────────────────────────────────────────────── */
@@ -122,6 +126,7 @@ function PrincipleCard({ p, index }: { p: { icon: LucideIcon; title: string; bod
 
 export default function About() {
   const navigate = useNavigate();
+  const heroContainerRef = useRef<HTMLDivElement>(null);
 
   const scrollToProcess = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -147,16 +152,42 @@ export default function About() {
 
         <SiteNav />
 
-        <div className="flex-1 flex items-center justify-center px-6 relative z-10 pt-32 pb-16">
+        <div
+          ref={heroContainerRef}
+          className="flex-1 flex items-center justify-center px-6 relative z-10 pt-32 pb-16"
+        >
           <div className="text-center max-w-3xl animate-fade-up">
             <h1 className="font-display text-white text-4xl sm:text-5xl md:text-6xl leading-[1.08] tracking-[-0.02em] font-semibold">
-              From an Idea to a
-              <br />
-              <span className="text-white/50">Production-Ready Blueprint.</span>
+              <VariableProximity
+                label="An Idea to a"
+                className="text-white block sm:whitespace-nowrap"
+                fromFontVariationSettings="'wght' 400"
+                toFontVariationSettings="'wght' 1000"
+                containerRef={heroContainerRef}
+                radius={120}
+                falloff="linear"
+              />
+              <VariableProximity
+                label="Production-Ready Blueprint."
+                className="text-white/50 block mt-1 sm:whitespace-nowrap"
+                fromFontVariationSettings="'wght' 400"
+                toFontVariationSettings="'wght' 1000"
+                containerRef={heroContainerRef}
+                radius={120}
+                falloff="linear"
+              />
             </h1>
-            <p className="text-white/60 text-sm sm:text-base md:text-lg leading-relaxed max-w-2xl mx-auto mt-6">
-              Forge AI is an AI-powered Solution Architect that transforms ideas into comprehensive technical blueprints—guiding your entire development process from planning to deployment.
-            </p>
+            <div className="text-white/60 text-sm sm:text-base md:text-lg leading-relaxed max-w-2xl mx-auto mt-6">
+              <VariableProximity
+                label="Forge AI is an AI-powered Solution Architect that transforms ideas into comprehensive technical blueprints—guiding your entire development process from planning to deployment."
+                className="text-white/60 leading-relaxed max-w-2xl mx-auto block"
+                fromFontVariationSettings="'wght' 300"
+                toFontVariationSettings="'wght' 600"
+                containerRef={heroContainerRef}
+                radius={100}
+                falloff="linear"
+              />
+            </div>
             <div className="flex flex-wrap items-center justify-center gap-3 mt-8">
               <button
                 onClick={() => navigate("/generator")}
@@ -254,13 +285,39 @@ export default function About() {
           ref={processHead.ref as React.RefObject<HTMLDivElement>}
           className={`reveal reveal-up ${processHead.inView ? "in-view" : ""} text-center mb-14`}
         >
-          <p className="text-accent2 text-xs font-semibold uppercase tracking-widest mb-3">The Forge Process</p>
-          <h2 className="font-display text-2xl sm:text-3xl md:text-4xl text-white font-semibold">
+          <ScrollFloat
+            animationDuration={0.8}
+            ease="power2.out"
+            scrollStart="top bottom-=10%"
+            scrollEnd="bottom center"
+            stagger={0.03}
+            containerClassName="w-full flex justify-center"
+            textClassName="text-accent2 text-xs font-semibold uppercase tracking-widest mb-3"
+          >
+            The Forge Process
+          </ScrollFloat>
+          <ScrollFloat
+            animationDuration={0.8}
+            ease="power2.out"
+            scrollStart="top bottom-=10%"
+            scrollEnd="bottom center"
+            stagger={0.02}
+            containerClassName="w-full flex justify-center"
+            textClassName="font-display text-2xl sm:text-3xl md:text-4xl text-white font-semibold"
+          >
             From spark to ship
-          </h2>
-          <p className="text-slate-400 text-sm mt-4 max-w-md mx-auto">
+          </ScrollFloat>
+          <ScrollFloat
+            animationDuration={0.8}
+            ease="power2.out"
+            scrollStart="top bottom-=10%"
+            scrollEnd="bottom center"
+            stagger={0.005}
+            containerClassName="w-full flex justify-center mt-4 max-w-xl mx-auto"
+            textClassName="text-slate-400 text-sm leading-relaxed"
+          >
             Every project follows the same structured journey—Forge AI handles the heavy planning so you can focus on building.
-          </p>
+          </ScrollFloat>
         </div>
 
         <div className="w-full max-w-lg mx-auto">
@@ -308,10 +365,28 @@ export default function About() {
           ref={audienceHead.ref as React.RefObject<HTMLDivElement>}
           className={`reveal reveal-up ${audienceHead.inView ? "in-view" : ""} text-center mb-14`}
         >
-          <p className="text-accent2 text-xs font-semibold uppercase tracking-widest mb-3">Who It's For</p>
-          <h2 className="font-display text-2xl sm:text-3xl md:text-4xl text-white font-semibold">
+          <ScrollFloat
+            animationDuration={0.8}
+            ease="power2.out"
+            scrollStart="top bottom-=10%"
+            scrollEnd="bottom center"
+            stagger={0.03}
+            containerClassName="w-full flex justify-center"
+            textClassName="text-accent2 text-xs font-semibold uppercase tracking-widest mb-3"
+          >
+            Who It's For
+          </ScrollFloat>
+          <ScrollFloat
+            animationDuration={0.8}
+            ease="power2.out"
+            scrollStart="top bottom-=10%"
+            scrollEnd="bottom center"
+            stagger={0.02}
+            containerClassName="w-full flex justify-center"
+            textClassName="font-display text-2xl sm:text-3xl md:text-4xl text-white font-semibold"
+          >
             Built for everyone who builds software
-          </h2>
+          </ScrollFloat>
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -327,10 +402,28 @@ export default function About() {
           ref={principlesHead.ref as React.RefObject<HTMLDivElement>}
           className={`reveal reveal-up ${principlesHead.inView ? "in-view" : ""} text-center mb-14`}
         >
-          <p className="text-accent2 text-xs font-semibold uppercase tracking-widest mb-3">Core Principles</p>
-          <h2 className="font-display text-2xl sm:text-3xl md:text-4xl text-white font-semibold">
+          <ScrollFloat
+            animationDuration={0.8}
+            ease="power2.out"
+            scrollStart="top bottom-=10%"
+            scrollEnd="bottom center"
+            stagger={0.03}
+            containerClassName="w-full flex justify-center"
+            textClassName="text-accent2 text-xs font-semibold uppercase tracking-widest mb-3"
+          >
+            Core Principles
+          </ScrollFloat>
+          <ScrollFloat
+            animationDuration={0.8}
+            ease="power2.out"
+            scrollStart="top bottom-=10%"
+            scrollEnd="bottom center"
+            stagger={0.02}
+            containerClassName="w-full flex justify-center"
+            textClassName="font-display text-2xl sm:text-3xl md:text-4xl text-white font-semibold"
+          >
             Our philosophy
-          </h2>
+          </ScrollFloat>
         </div>
 
         <div className="grid sm:grid-cols-3 gap-5">
@@ -377,8 +470,20 @@ export default function About() {
           ref={ctaRef.ref as React.RefObject<HTMLDivElement>}
           className={`reveal reveal-up ${ctaRef.inView ? "in-view" : ""} glass rounded-3xl p-10 sm:p-14 relative overflow-hidden`}
         >
+          {/* Interactive ShapeBlur shader background */}
+          <div className="absolute inset-0 z-0 opacity-40 pointer-events-none">
+            <ShapeBlur
+              variation={0}
+              pixelRatioProp={window.devicePixelRatio || 1}
+              shapeSize={2.0}
+              roundness={0.5}
+              borderSize={0.03}
+              circleSize={0.4}
+              circleEdge={0.8}
+            />
+          </div>
           <div className="absolute -bottom-1/2 left-1/2 -translate-x-1/2 w-[70%] h-[80%] rounded-full bg-accent/15 blur-[80px] pointer-events-none" />
-          <div className="relative">
+          <div className="relative z-10">
             <h2 className="font-display text-2xl sm:text-3xl text-white font-semibold mb-4">
               Build Better Before You Build Bigger
             </h2>
