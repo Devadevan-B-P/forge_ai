@@ -23,6 +23,10 @@ import {
 import SiteNav from "../components/SiteNav";
 import GradualBlur from "../components/vendor/GradualBlur";
 import SpotlightCard from "../components/vendor/SpotlightCard";
+import BorderGlow from "../components/vendor/BorderGlow";
+import BlurText from "../components/vendor/BlurText";
+import ShinyText from "../components/vendor/ShinyText";
+import AnimatedContent from "../components/vendor/AnimatedContent";
 import { useInView } from "../hooks/useInView";
 
 /* ─── The Forge Process ──────────────────────────────────────────────── */
@@ -119,6 +123,14 @@ function PrincipleCard({ p, index }: { p: { icon: LucideIcon; title: string; bod
 export default function About() {
   const navigate = useNavigate();
 
+  const scrollToProcess = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const element = document.getElementById("process");
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
   const missionLeft = useInView(0.15);
   const missionRight = useInView(0.15);
   const processHead = useInView(0.15);
@@ -135,12 +147,8 @@ export default function About() {
 
         <SiteNav />
 
-        <div className="flex-1 flex items-center justify-center px-6 relative z-10">
+        <div className="flex-1 flex items-center justify-center px-6 relative z-10 pt-32 pb-16">
           <div className="text-center max-w-3xl animate-fade-up">
-            <div className="inline-flex items-center gap-2 liquid-glass rounded-full px-4 py-1.5 mb-7 text-xs font-medium uppercase tracking-widest">
-              <Sparkles size={13} className="text-accent2 animate-float" />
-              <span className="shimmer-text">About Forge AI</span>
-            </div>
             <h1 className="font-display text-white text-4xl sm:text-5xl md:text-6xl leading-[1.08] tracking-[-0.02em] font-semibold">
               From an Idea to a
               <br />
@@ -159,6 +167,7 @@ export default function About() {
               </button>
               <a
                 href="#process"
+                onClick={scrollToProcess}
                 className="px-6 py-3 liquid-glass rounded-full text-white text-sm font-semibold hover:bg-white/5 transition"
               >
                 See the process
@@ -184,16 +193,34 @@ export default function About() {
             ref={missionLeft.ref as React.RefObject<HTMLDivElement>}
             className={`reveal reveal-left ${missionLeft.inView ? "in-view" : ""}`}
           >
-            <p className="text-accent2 text-xs font-semibold uppercase tracking-widest mb-4">Our Mission</p>
-            <h2 className="font-display text-2xl sm:text-3xl md:text-4xl text-white font-semibold mb-5 leading-snug">
-              Why We Built Forge AI
-            </h2>
-            <p className="text-slate-400 text-sm sm:text-base leading-relaxed mb-4">
-              Every successful software project begins with a well-designed architecture, yet planning is often overlooked. Developers spend hours deciding on technology stacks, designing databases, organising APIs, and figuring out deployment strategies—before writing a single line of code.
-            </p>
-            <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
-              Our mission is to make professional software architecture accessible to everyone by using AI to automate the planning phase while still following modern engineering best practices.
-            </p>
+            <BlurText
+              text="Our Mission"
+              animateBy="words"
+              direction="bottom"
+              delay={80}
+              className="text-accent2 text-xs font-semibold uppercase tracking-widest mb-4"
+            />
+            <BlurText
+              text="Why We Built Forge AI"
+              animateBy="words"
+              direction="bottom"
+              delay={100}
+              className="font-display text-2xl sm:text-3xl md:text-4xl text-white font-semibold mb-5 leading-snug"
+            />
+            <ShinyText
+              text="Every successful software project begins with a well-designed architecture, yet planning is often overlooked. Developers spend hours deciding on technology stacks, designing databases, organising APIs, and figuring out deployment strategies—before writing a single line of code."
+              className="text-slate-400 text-sm sm:text-base leading-relaxed mb-4 block"
+              color="#94a3b8"
+              shineColor="#ffffff"
+              speed={3.5}
+            />
+            <ShinyText
+              text="Our mission is to make professional software architecture accessible to everyone by using AI to automate the planning phase while still following modern engineering best practices."
+              className="text-slate-400 text-sm sm:text-base leading-relaxed block"
+              color="#94a3b8"
+              shineColor="#ffffff"
+              speed={3.5}
+            />
           </div>
 
           {/* Right — decorative glass card */}
@@ -202,15 +229,20 @@ export default function About() {
             className={`reveal reveal-right ${missionRight.inView ? "in-view" : ""} glass rounded-3xl p-8 flex flex-col gap-4`}
           >
             {["Plan the build", "Skip the guesswork", "Ship with confidence"].map((t, i) => (
-              <div
+              <AnimatedContent
                 key={t}
-                className={`flex items-center gap-4 reveal reveal-up ${missionRight.inView ? "in-view" : ""} stagger-${i + 1}`}
+                distance={40}
+                direction="vertical"
+                delay={i * 0.15}
+                duration={0.8}
+                ease="power2.out"
+                className="flex items-center gap-4"
               >
                 <span className="w-8 h-8 rounded-full bg-accent/15 text-accent2 text-xs font-bold font-display flex items-center justify-center shrink-0 pulse-glow">
                   {String(i + 1).padStart(2, "0")}
                 </span>
                 <span className="text-white/80 text-sm font-medium">{t}</span>
-              </div>
+              </AnimatedContent>
             ))}
           </div>
         </div>
@@ -312,18 +344,30 @@ export default function About() {
       <section className="px-6 py-24 sm:py-28 max-w-5xl mx-auto">
         <div
           ref={visionRef.ref as React.RefObject<HTMLDivElement>}
-          className={`reveal reveal-scale ${visionRef.inView ? "in-view" : ""} glass rounded-3xl p-10 sm:p-14 border border-accent2/10 relative overflow-hidden`}
+          className={`reveal reveal-scale ${visionRef.inView ? "in-view" : ""}`}
         >
-          <div className="absolute -top-1/2 left-1/2 -translate-x-1/2 w-[60%] h-[80%] rounded-full bg-accent2/10 blur-[80px] pointer-events-none" />
-          <div className="relative text-center max-w-2xl mx-auto">
-            <p className="text-accent2 text-xs font-semibold uppercase tracking-widest mb-4 shimmer-text">Vision</p>
-            <h2 className="font-display text-2xl sm:text-3xl text-white font-semibold mb-5">
-              The future of software planning
-            </h2>
-            <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
-              We believe the future of software development starts long before code is written. Our vision is to build an intelligent architecture workspace where developers can design, validate, and refine complete software systems using AI—reducing planning time while improving the quality of technical decisions.
-            </p>
-          </div>
+          <BorderGlow
+            edgeSensitivity={35}
+            glowColor="262 90 70"
+            backgroundColor="rgba(18, 21, 28, 0.6)"
+            borderRadius={24}
+            glowRadius={60}
+            glowIntensity={1.2}
+            coneSpread={30}
+            animated={true}
+            colors={['#7c5cff', '#4f9dff', '#5cf0d0']}
+            className="w-full"
+          >
+            <div className="p-10 sm:p-14 relative text-center max-w-2xl mx-auto">
+              <p className="text-accent2 text-xs font-semibold uppercase tracking-widest mb-4 shimmer-text">Vision</p>
+              <h2 className="font-display text-2xl sm:text-3xl text-white font-semibold mb-5">
+                The future of software planning
+              </h2>
+              <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
+                We believe the future of software development starts long before code is written. Our vision is to build an intelligent architecture workspace where developers can design, validate, and refine complete software systems using AI—reducing planning time while improving the quality of technical decisions.
+              </p>
+            </div>
+          </BorderGlow>
         </div>
       </section>
 

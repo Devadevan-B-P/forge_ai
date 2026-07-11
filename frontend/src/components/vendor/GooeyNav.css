@@ -105,7 +105,7 @@
 }
 
 .gooey-nav-container .effect.filter {
-  filter: blur(5px) contrast(30) blur(0);
+  filter: blur(7px) contrast(100) blur(0);
   mix-blend-mode: lighten;
 }
 
@@ -114,7 +114,7 @@
   position: absolute;
   inset: -75px;
   z-index: -2;
-  background: transparent;
+  background: black;
 }
 
 .gooey-nav-container .effect.filter::after {
