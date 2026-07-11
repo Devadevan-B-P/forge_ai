@@ -95,17 +95,11 @@ export default function SiteNav() {
 
           {/* Desktop CTA */}
           <div className="flex items-center gap-2 ml-3">
-            <Link
-              to="/generator"
-              className="px-3 py-2 text-white/90 hover:text-white text-sm font-medium transition"
-            >
-              Log in
-            </Link>
             <button
               onClick={() => navigate("/generator")}
               className="liquid-glass rounded-full px-5 py-2 text-white text-sm font-medium hover:bg-white/5 transition flex items-center gap-1.5"
             >
-              Try it free
+              Start Building
               <ArrowRight size={14} />
             </button>
           </div>
@@ -158,13 +152,6 @@ export default function SiteNav() {
             </div>
           ))}
           <div className="pt-4 mt-2 border-t border-white/10 flex flex-col gap-2">
-            <Link
-              to="/generator"
-              className="text-center text-white/70 text-sm py-2"
-              onClick={() => setMobileOpen(false)}
-            >
-              Log in
-            </Link>
             <button
               onClick={() => {
                 setMobileOpen(false);
@@ -172,7 +159,7 @@ export default function SiteNav() {
               }}
               className="w-full flex items-center justify-center gap-1.5 liquid-glass rounded-full px-5 py-2.5 text-white text-sm font-medium"
             >
-              Try it free
+              Start Building
               <ArrowRight size={14} />
             </button>
           </div>

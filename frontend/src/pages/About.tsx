@@ -1,4 +1,3 @@
-import { useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowRight,
@@ -18,8 +17,10 @@ import {
   MessageSquareOff,
   ClipboardList,
   BrainCircuit,
+  type LucideIcon,
 } from "lucide-react";
 import SiteNav from "../components/SiteNav";
+import GradualBlur from "../components/vendor/GradualBlur";
 import { useInView } from "../hooks/useInView";
 
 /* ─── The Forge Process ──────────────────────────────────────────────── */
@@ -49,31 +50,100 @@ const PRINCIPLES = [
   { icon: BrainCircuit, title: "AI as an Assistant", body: "Forge AI helps developers make better architectural decisions while keeping them fully in control." },
 ];
 
-/* ─── Reusable reveal section wrapper ───────────────────────────────── */
-function RevealSection({
+/* ─── Reveal-on-scroll card ───────────────────────────────────────────
+   IMPORTANT: useInView is a hook, so it can only be called from inside a
+   component — never directly inside a .map() callback (that breaks React's
+   Rules of Hooks). This wrapper is what makes staggered grids like PROCESS,
+   AUDIENCE, and PRINCIPLES safe: each card gets its own component instance,
+   and the hook lives at that instance's top level. */
+function RevealCard({
   children,
-  className = "",
   variant = "reveal-up",
+  delay = 0,
+  threshold = 0.15,
+  className = "",
 }: {
   children: React.ReactNode;
-  className?: string;
   variant?: string;
+  delay?: number;
+  threshold?: number;
+  className?: string;
 }) {
-  const { ref, inView } = useInView(0.12);
+  const { ref, inView } = useInView(threshold);
   return (
-    <section
-      ref={ref as React.RefObject<HTMLElement>}
+    <div
+      ref={ref as React.RefObject<HTMLDivElement>}
       className={`reveal ${variant} ${inView ? "in-view" : ""} ${className}`}
+      style={{ transitionDelay: `${delay}s` }}
     >
       {children}
-    </section>
+    </div>
+  );
+}
+
+function ProcessCard({ step, index }: { step: (typeof PROCESS)[number]; index: number }) {
+  return (
+    <div className="flex flex-col items-center w-full max-w-sm">
+      <RevealCard
+        variant="reveal-scale"
+        delay={index * 0.07}
+        threshold={0.2}
+        className="glass-hover glass rounded-2xl px-8 py-5 w-full flex items-center gap-5 border border-transparent group"
+      >
+        <div className={`w-11 h-11 rounded-xl ${step.bg} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform pulse-glow`}>
+          <step.icon size={20} className={step.color} />
+        </div>
+        <div>
+          <p className="text-white/30 text-[10px] font-mono uppercase tracking-widest mb-0.5">
+            Step {String(index + 1).padStart(2, "0")}
+          </p>
+          <p className="text-white font-medium text-sm">{step.label}</p>
+        </div>
+      </RevealCard>
+      {index < PROCESS.length - 1 && (
+        <div className="flex flex-col items-center my-1 gap-0.5">
+          <div className="w-px h-4 bg-white/10" />
+          <div className="w-1.5 h-1.5 rounded-full bg-accent/40" />
+          <div className="w-px h-4 bg-white/10" />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AudienceCard({ item, index }: { item: (typeof AUDIENCE)[number]; index: number }) {
+  return (
+    <RevealCard
+      delay={index * 0.08}
+      className="glass-hover glass rounded-2xl p-5 border border-transparent group text-center"
+    >
+      <div className="w-10 h-10 rounded-xl bg-accent2/10 flex items-center justify-center text-accent2 mb-4 mx-auto group-hover:bg-accent2/20 transition pulse-glow">
+        <item.icon size={18} />
+      </div>
+      <h3 className="text-white text-sm font-semibold mb-1.5">{item.label}</h3>
+      <p className="text-slate-500 text-xs leading-relaxed">{item.desc}</p>
+    </RevealCard>
+  );
+}
+
+function PrincipleCard({ p, index }: { p: { icon: LucideIcon; title: string; body: string }; index: number }) {
+  return (
+    <RevealCard
+      delay={index * 0.1}
+      className="glass-hover glass rounded-2xl p-7 border border-transparent group"
+    >
+      <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center text-accent mb-5 group-hover:bg-accent/20 transition pulse-glow">
+        <p.icon size={18} />
+      </div>
+      <h3 className="text-white font-semibold mb-2">{p.title}</h3>
+      <p className="text-slate-400 text-sm leading-relaxed">{p.body}</p>
+    </RevealCard>
   );
 }
 
 export default function About() {
   const navigate = useNavigate();
 
-  /* Individual reveal refs for fine-grained control */
   const missionLeft = useInView(0.15);
   const missionRight = useInView(0.15);
   const processHead = useInView(0.15);
@@ -142,6 +212,18 @@ export default function About() {
             <div className="w-1 h-1.5 rounded-full bg-white/50 animate-bounce" />
           </div>
         </div>
+
+        {/* Smooth blur transition from hero into the content below */}
+        <GradualBlur
+          target="parent"
+          position="bottom"
+          height="7rem"
+          strength={2}
+          divCount={6}
+          curve="bezier"
+          exponential
+          opacity={1}
+        />
       </section>
 
       {/* ── Mission ─────────────────────────────────────────────────────── */}
@@ -199,37 +281,10 @@ export default function About() {
           </p>
         </div>
 
-        {/* Timeline — each card reveals with a stagger */}
         <div className="relative flex flex-col items-center gap-0">
-          {PROCESS.map((step, i) => {
-            const { ref: cardRef, inView: cardVisible } = useInView(0.2);
-            return (
-              <div key={step.label} className="flex flex-col items-center w-full max-w-sm">
-                {/* Card */}
-                <div
-                  ref={cardRef as React.RefObject<HTMLDivElement>}
-                  className={`reveal reveal-scale ${cardVisible ? "in-view" : ""} glass-hover glass rounded-2xl px-8 py-5 w-full flex items-center gap-5 border border-transparent group`}
-                  style={{ transitionDelay: `${i * 0.07}s` }}
-                >
-                  <div className={`w-11 h-11 rounded-xl ${step.bg} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform pulse-glow`}>
-                    <step.icon size={20} className={step.color} />
-                  </div>
-                  <div>
-                    <p className="text-white/30 text-[10px] font-mono uppercase tracking-widest mb-0.5">Step {String(i + 1).padStart(2, "0")}</p>
-                    <p className="text-white font-medium text-sm">{step.label}</p>
-                  </div>
-                </div>
-                {/* Connector */}
-                {i < PROCESS.length - 1 && (
-                  <div className="flex flex-col items-center my-1 gap-0.5">
-                    <div className="w-px h-4 bg-white/10" />
-                    <div className="w-1.5 h-1.5 rounded-full bg-accent/40" />
-                    <div className="w-px h-4 bg-white/10" />
-                  </div>
-                )}
-              </div>
-            );
-          })}
+          {PROCESS.map((step, i) => (
+            <ProcessCard key={step.label} step={step} index={i} />
+          ))}
         </div>
       </section>
 
@@ -246,23 +301,9 @@ export default function About() {
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          {AUDIENCE.map((a, i) => {
-            const { ref: cardRef, inView: cardVisible } = useInView(0.15);
-            return (
-              <div
-                key={a.label}
-                ref={cardRef as React.RefObject<HTMLDivElement>}
-                className={`reveal reveal-up ${cardVisible ? "in-view" : ""} glass-hover glass rounded-2xl p-5 border border-transparent group text-center`}
-                style={{ transitionDelay: `${i * 0.08}s` }}
-              >
-                <div className="w-10 h-10 rounded-xl bg-accent2/10 flex items-center justify-center text-accent2 mb-4 mx-auto group-hover:bg-accent2/20 transition pulse-glow">
-                  <a.icon size={18} />
-                </div>
-                <h3 className="text-white text-sm font-semibold mb-1.5">{a.label}</h3>
-                <p className="text-slate-500 text-xs leading-relaxed">{a.desc}</p>
-              </div>
-            );
-          })}
+          {AUDIENCE.map((a, i) => (
+            <AudienceCard key={a.label} item={a} index={i} />
+          ))}
         </div>
       </section>
 
@@ -279,23 +320,9 @@ export default function About() {
         </div>
 
         <div className="grid sm:grid-cols-3 gap-5">
-          {PRINCIPLES.map((p, i) => {
-            const { ref: cardRef, inView: cardVisible } = useInView(0.15);
-            return (
-              <div
-                key={p.title}
-                ref={cardRef as React.RefObject<HTMLDivElement>}
-                className={`reveal reveal-up ${cardVisible ? "in-view" : ""} glass-hover glass rounded-2xl p-7 border border-transparent group`}
-                style={{ transitionDelay: `${i * 0.1}s` }}
-              >
-                <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center text-accent mb-5 group-hover:bg-accent/20 transition pulse-glow">
-                  <p.icon size={18} />
-                </div>
-                <h3 className="text-white font-semibold mb-2">{p.title}</h3>
-                <p className="text-slate-400 text-sm leading-relaxed">{p.body}</p>
-              </div>
-            );
-          })}
+          {PRINCIPLES.map((p, i) => (
+            <PrincipleCard key={p.title} p={p} index={i} />
+          ))}
         </div>
       </section>
 
@@ -305,7 +332,6 @@ export default function About() {
           ref={visionRef.ref as React.RefObject<HTMLDivElement>}
           className={`reveal reveal-scale ${visionRef.inView ? "in-view" : ""} glass rounded-3xl p-10 sm:p-14 border border-accent2/10 relative overflow-hidden`}
         >
-          {/* Glow behind */}
           <div className="absolute -top-1/2 left-1/2 -translate-x-1/2 w-[60%] h-[80%] rounded-full bg-accent2/10 blur-[80px] pointer-events-none" />
           <div className="relative text-center max-w-2xl mx-auto">
             <p className="text-accent2 text-xs font-semibold uppercase tracking-widest mb-4 shimmer-text">Vision</p>
