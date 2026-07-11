@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import ScrollStack, { ScrollStackItem } from "../components/vendor/ScrollStack";
 import {
   ArrowRight,
   Sparkles,
@@ -21,6 +22,7 @@ import {
 } from "lucide-react";
 import SiteNav from "../components/SiteNav";
 import GradualBlur from "../components/vendor/GradualBlur";
+import SpotlightCard from "../components/vendor/SpotlightCard";
 import { useInView } from "../hooks/useInView";
 
 /* ─── The Forge Process ──────────────────────────────────────────────── */
@@ -81,47 +83,20 @@ function RevealCard({
   );
 }
 
-function ProcessCard({ step, index }: { step: (typeof PROCESS)[number]; index: number }) {
-  return (
-    <div className="flex flex-col items-center w-full max-w-sm">
-      <RevealCard
-        variant="reveal-scale"
-        delay={index * 0.07}
-        threshold={0.2}
-        className="glass-hover glass rounded-2xl px-8 py-5 w-full flex items-center gap-5 border border-transparent group"
-      >
-        <div className={`w-11 h-11 rounded-xl ${step.bg} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform pulse-glow`}>
-          <step.icon size={20} className={step.color} />
-        </div>
-        <div>
-          <p className="text-white/30 text-[10px] font-mono uppercase tracking-widest mb-0.5">
-            Step {String(index + 1).padStart(2, "0")}
-          </p>
-          <p className="text-white font-medium text-sm">{step.label}</p>
-        </div>
-      </RevealCard>
-      {index < PROCESS.length - 1 && (
-        <div className="flex flex-col items-center my-1 gap-0.5">
-          <div className="w-px h-4 bg-white/10" />
-          <div className="w-1.5 h-1.5 rounded-full bg-accent/40" />
-          <div className="w-px h-4 bg-white/10" />
-        </div>
-      )}
-    </div>
-  );
-}
 
 function AudienceCard({ item, index }: { item: (typeof AUDIENCE)[number]; index: number }) {
   return (
     <RevealCard
       delay={index * 0.08}
-      className="glass-hover glass rounded-2xl p-5 border border-transparent group text-center"
+      className="h-full"
     >
-      <div className="w-10 h-10 rounded-xl bg-accent2/10 flex items-center justify-center text-accent2 mb-4 mx-auto group-hover:bg-accent2/20 transition pulse-glow">
-        <item.icon size={18} />
-      </div>
-      <h3 className="text-white text-sm font-semibold mb-1.5">{item.label}</h3>
-      <p className="text-slate-500 text-xs leading-relaxed">{item.desc}</p>
+      <SpotlightCard className="h-full flex flex-col items-center text-center p-6 group" spotlightColor="rgba(124, 92, 255, 0.12)">
+        <div className="w-10 h-10 rounded-xl bg-accent2/10 flex items-center justify-center text-accent2 mb-4 group-hover:bg-accent2/20 transition pulse-glow">
+          <item.icon size={18} />
+        </div>
+        <h3 className="text-white text-sm font-semibold mb-1.5">{item.label}</h3>
+        <p className="text-slate-500 text-xs leading-relaxed">{item.desc}</p>
+      </SpotlightCard>
     </RevealCard>
   );
 }
@@ -157,24 +132,10 @@ export default function About() {
 
       {/* ── Hero ────────────────────────────────────────────────────────── */}
       <section className="relative min-h-[70vh] w-full overflow-hidden flex flex-col">
-        {/* Background blobs */}
-        <div className="absolute inset-0 -z-10">
-          <div className="absolute inset-0 bg-surface" />
-          <div className="absolute -top-1/4 -left-1/4 w-[60%] h-[60%] rounded-full bg-accent/20 blur-[120px] animate-mesh-drift" />
-          <div className="absolute -bottom-1/4 -right-1/4 w-[60%] h-[60%] rounded-full bg-accent2/15 blur-[120px] animate-mesh-drift-slow" />
-          <div
-            className="absolute inset-0 opacity-[0.03]"
-            style={{
-              backgroundImage:
-                "linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)",
-              backgroundSize: "48px 48px",
-            }}
-          />
-        </div>
 
         <SiteNav />
 
-        <div className="flex-1 flex items-center justify-center px-6">
+        <div className="flex-1 flex items-center justify-center px-6 relative z-10">
           <div className="text-center max-w-3xl animate-fade-up">
             <div className="inline-flex items-center gap-2 liquid-glass rounded-full px-4 py-1.5 mb-7 text-xs font-medium uppercase tracking-widest">
               <Sparkles size={13} className="text-accent2 animate-float" />
@@ -213,17 +174,6 @@ export default function About() {
           </div>
         </div>
 
-        {/* Smooth blur transition from hero into the content below */}
-        <GradualBlur
-          target="parent"
-          position="bottom"
-          height="7rem"
-          strength={2}
-          divCount={6}
-          curve="bezier"
-          exponential
-          opacity={1}
-        />
       </section>
 
       {/* ── Mission ─────────────────────────────────────────────────────── */}
@@ -281,10 +231,42 @@ export default function About() {
           </p>
         </div>
 
-        <div className="relative flex flex-col items-center gap-0">
-          {PROCESS.map((step, i) => (
-            <ProcessCard key={step.label} step={step} index={i} />
-          ))}
+        <div className="w-full max-w-lg mx-auto">
+          <ScrollStack
+            useWindowScroll={true}
+            itemDistance={50}
+            blurAmount={1.5}
+            baseScale={0.92}
+            itemScale={0.02}
+            itemStackDistance={20}
+            stackPosition="25%"
+            scaleEndPosition="12%"
+          >
+            {PROCESS.map((step, i) => (
+              <ScrollStackItem key={step.label}>
+                <div className="glass rounded-[24px] p-6 border border-white/10 flex items-start gap-4 bg-[#12151c]/90 backdrop-blur-md">
+                  <div className={`w-11 h-11 rounded-xl ${step.bg} flex items-center justify-center shrink-0 pulse-glow`}>
+                    <step.icon size={20} className={step.color} />
+                  </div>
+                  <div>
+                    <p className="text-white/40 text-[10px] font-mono uppercase tracking-widest mb-0.5">
+                      Step {String(i + 1).padStart(2, "0")}
+                    </p>
+                    <h3 className="text-white font-semibold text-sm font-sans">{step.label}</h3>
+                    <p className="text-white/60 text-xs mt-1 leading-relaxed">
+                      {i === 0 && "Define your software idea in simple natural language requirements."}
+                      {i === 1 && "AI parses the prompt to define project scale, scopes, and parameters."}
+                      {i === 2 && "Delineates the core features, modular dependencies, and structural stack."}
+                      {i === 3 && "Models relational database schema tables, fields, and connections."}
+                      {i === 4 && "Defines REST API endpoints with inputs, outputs, and JSON payloads."}
+                      {i === 5 && "Maps Docker containerization setups and AWS deployment nodes."}
+                      {i === 6 && "Generates structured roadmap timelines, security, and boilerplate code."}
+                    </p>
+                  </div>
+                </div>
+              </ScrollStackItem>
+            ))}
+          </ScrollStack>
         </div>
       </section>
 
@@ -369,6 +351,19 @@ export default function About() {
           </div>
         </div>
       </section>
+
+      {/* Scroll-revealed bottom blur */}
+      <GradualBlur
+        target="page"
+        position="bottom"
+        height="8rem"
+        strength={3}
+        divCount={8}
+        curve="bezier"
+        exponential
+        opacity={1}
+        animated="scroll"
+      />
 
       <footer className="px-6 py-8 text-center text-xs text-slate-600">
         Forge AI — an AI software architect, not a code generator.

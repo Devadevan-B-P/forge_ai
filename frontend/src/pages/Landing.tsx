@@ -1,78 +1,82 @@
 import { useNavigate } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
+import { motion } from "framer-motion";
 import SiteNav from "../components/SiteNav";
 
-/* ── Page ─────────────────────────────────────────────────────────────── */
 export default function Landing() {
   const navigate = useNavigate();
 
   return (
-    <section className="relative h-screen w-full overflow-hidden flex flex-col">
+    <div className="relative h-screen w-full bg-[#050505] text-white overflow-hidden select-none">
+      {/* Background Atmosphere Overlays */}
+      <div className="grain-overlay" />
+      <div className="animated-vignette" />
+      <div className="radial-bg" />
 
-      {/* Animated mesh background — no external video asset, self-contained
-          and consistent with the same technique used on the About page. */}
-      <div className="absolute inset-0 -z-10">
-        <div className="absolute inset-0 bg-surface" />
-        <div className="absolute -top-1/4 -left-1/4 w-[70%] h-[70%] rounded-full bg-accent/20 blur-[120px] animate-mesh-drift" />
-        <div className="absolute -bottom-1/4 -right-1/4 w-[70%] h-[70%] rounded-full bg-accent2/15 blur-[120px] animate-mesh-drift-slow" />
-        <div
-          className="absolute inset-0 opacity-[0.03]"
-          style={{
-            backgroundImage:
-              "linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)",
-            backgroundSize: "48px 48px",
-          }}
-        />
-      </div>
-
-      {/* Nav */}
-      <div className="relative z-10">
+      {/* Floating Pill Nav */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
+      >
         <SiteNav />
-      </div>
+      </motion.div>
 
-      {/* Hero content */}
-      <div className="relative z-10 flex-1 flex items-start justify-center pt-16 sm:pt-20 md:pt-24 px-6">
-        <div className="text-center max-w-3xl">
-
-          {/* Badge */}
-          <div className="animate-fade-up inline-flex items-center gap-2 liquid-glass rounded-full px-4 py-1.5 mb-7 text-white/80 text-xs font-medium uppercase tracking-widest">
-            AI Software Architect
+      {/* Hero container */}
+      <main className="relative w-full h-full flex flex-col items-center justify-center z-10 px-6 max-w-7xl mx-auto">
+        <div className="text-center flex flex-col items-center max-w-[1000px] w-full">
+          {/* Main heading */}
+          <div>
+            <motion.h1
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
+              className="font-serif text-[42px] sm:text-[60px] md:text-[86px] lg:text-[96px] leading-[0.9] tracking-[-0.03em] font-medium text-white"
+            >
+              Forge Intelligence.
+              <br />
+              <span className="text-white/40">Built Beyond Software.</span>
+            </motion.h1>
           </div>
 
-          {/* Headline */}
-          <h1 className="animate-fade-up-delay-1 text-white text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl leading-[1.05] tracking-[-0.02em] font-semibold">
-            Plan the build.
-            <br />
-            <span className="text-white/60">Skip the</span>
-            <br />
-            <span className="text-white/60">guesswork.</span>
-          </h1>
-
-          {/* Subheading */}
-          <p className="animate-fade-up-delay-2 text-white/80 text-sm sm:text-base md:text-lg leading-relaxed max-w-md mx-auto mt-6 sm:mt-8">
-            Forge AI turns a one-line idea into a complete software architecture
-            blueprint — tech stack, schema, APIs, and a roadmap — so you start
-            coding instead of researching.
-          </p>
-
-          {/* CTAs */}
-          <div className="animate-fade-up-delay-2 flex flex-wrap items-center justify-center gap-3 sm:gap-4 mt-6 sm:mt-8">
-            <button
-              onClick={() => navigate("/generator")}
-              className="group flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 bg-white text-gray-900 text-sm font-semibold rounded-full hover:bg-white/90 transition"
+          {/* Subtitle */}
+          <div className="mt-8 w-full max-w-[620px]">
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0.7 }}
+              transition={{ duration: 0.8, delay: 0.7, ease: [0.16, 1, 0.3, 1] }}
+              className="text-base sm:text-lg md:text-xl text-white/70 leading-relaxed font-sans"
             >
-              Start Building
-              <ArrowRight size={15} className="group-hover:translate-x-1 transition-transform" />
-            </button>
-            <button
-              onClick={() => navigate("/about")}
-              className="px-5 sm:px-6 py-2.5 sm:py-3 liquid-glass rounded-full text-white text-sm font-semibold hover:bg-white/10 transition"
+              Build intelligent workflows that think, adapt, and evolve.
+            </motion.p>
+          </div>
+
+          {/* Interactive CTAs */}
+          <div className="mt-10">
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.9, ease: [0.16, 1, 0.3, 1] }}
+              className="flex flex-wrap items-center justify-center gap-4"
             >
-              See how it works
-            </button>
+              {/* Primary button */}
+              <button
+                onClick={() => navigate("/generator")}
+                className="px-8 py-3.5 rounded-full bg-white text-black font-sans text-sm font-semibold tracking-wide transition-all duration-300 hover:scale-104 hover:shadow-[0_0_30px_rgba(255,255,255,0.6)] active:scale-98"
+              >
+                Launch Forge
+              </button>
+
+              {/* Secondary button */}
+              <button
+                onClick={() => navigate("/about")}
+                className="px-8 py-3.5 rounded-full border border-white/20 bg-transparent text-white font-sans text-sm font-semibold tracking-wide transition-all duration-300 hover:bg-white/10 hover:border-white/40 hover:scale-104 active:scale-98"
+              >
+                Watch Demo
+              </button>
+            </motion.div>
           </div>
         </div>
-      </div>
-    </section>
+      </main>
+    </div>
   );
 }
