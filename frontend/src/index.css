@@ -1,0 +1,79 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  background: radial-gradient(circle at 20% -10%, rgba(124,92,255,0.15), transparent 40%),
+              radial-gradient(circle at 80% 0%, rgba(92,240,208,0.10), transparent 35%),
+              #0b0d12;
+  color: #e6e8ef;
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+}
+
+h1, h2, h3, .font-display {
+  font-family: "Sora", "Inter", system-ui, sans-serif;
+}
+
+.glass {
+  background: rgba(18, 21, 28, 0.6);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Liquid glass: a soft frosted surface with a hairline gradient border that
+   catches light along the top and bottom edges instead of a flat 1px border.
+   Used for nav bars, dropdowns, and secondary buttons. */
+.liquid-glass {
+  background: rgba(255, 255, 255, 0.03);
+  background-blend-mode: luminosity;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: none;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.08);
+  position: relative;
+  overflow: hidden;
+}
+
+.liquid-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.4px;
+  background: linear-gradient(180deg,
+    rgba(255,255,255,0.28) 0%, rgba(255,255,255,0.08) 20%,
+    rgba(255,255,255,0) 40%, rgba(255,255,255,0) 60%,
+    rgba(255,255,255,0.08) 80%, rgba(255,255,255,0.28) 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+@keyframes dropdown-in {
+  from { opacity: 0; transform: translateY(-4px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.animate-dropdown { animation: dropdown-in 0.18s ease-out; }
+
+@keyframes mesh-drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(3%, -4%) scale(1.05); }
+  66% { transform: translate(-3%, 3%) scale(0.98); }
+}
+.animate-mesh-drift { animation: mesh-drift 18s ease-in-out infinite; }
+.animate-mesh-drift-slow { animation: mesh-drift 26s ease-in-out infinite reverse; }
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up { animation: fade-up 0.6s cubic-bezier(0.16,1,0.3,1) both; }
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: #2a2f3b; border-radius: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
