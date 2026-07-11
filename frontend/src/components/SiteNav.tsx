@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ChevronDown, Menu, X, ArrowRight } from "lucide-react";
 
-const NAV: { label: string; href?: string; items?: { label: string; href: string }[] }[] = [
+const NAV: { label: string; items?: { label: string; href: string }[] }[] = [
   {
     label: "Product",
     items: [
@@ -19,16 +19,41 @@ const NAV: { label: string; href?: string; items?: { label: string; href: string
   },
 ];
 
+/* ── Diamond SVG logo mark ─────────────────────────────────────────── */
+function DiamondLogo() {
+  return (
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+      {/* outer diamond */}
+      <path
+        d="M14 2L26 14L14 26L2 14L14 2Z"
+        fill="white"
+        opacity="0.9"
+      />
+      {/* inner diamond rotated 45° */}
+      <path
+        d="M14 7L21 14L14 21L7 14L14 7Z"
+        fill="#0b0d12"
+        opacity="0.5"
+      />
+    </svg>
+  );
+}
+
 export default function SiteNav() {
   const navigate = useNavigate();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <nav className="relative w-full px-5 sm:px-6 md:px-12 lg:px-16 py-4 sm:py-5">
+    <nav className="relative w-full px-5 sm:px-6 md:px-12 lg:px-16 py-4 sm:py-5 z-50">
       <div className="flex items-center justify-between">
-        <Link to="/" className="text-lg sm:text-xl font-display font-semibold tracking-tight text-white">
-          forge<span className="text-accent2">ai</span>
+
+        {/* Logo */}
+        <Link to="/" className="flex items-center gap-2">
+          <DiamondLogo />
+          <span className="text-lg sm:text-xl font-medium tracking-tight text-white">
+            forge<span className="text-white/60">ai</span>
+          </span>
         </Link>
 
         {/* Desktop nav */}
@@ -42,15 +67,18 @@ export default function SiteNav() {
             >
               <button className="flex items-center gap-1 px-3 py-2 text-white/90 hover:text-white text-sm font-medium transition">
                 {item.label}
-                <ChevronDown
-                  size={14}
-                  className={`transition-transform duration-200 ${
-                    openDropdown === item.label ? "rotate-180" : ""
-                  }`}
-                />
+                {item.items && (
+                  <ChevronDown
+                    size={14}
+                    className={`transition-transform duration-200 ${
+                      openDropdown === item.label ? "rotate-180" : ""
+                    }`}
+                  />
+                )}
               </button>
+
               {openDropdown === item.label && item.items && (
-                <div className="!absolute top-full left-0 liquid-glass rounded-xl py-2 px-2 min-w-[190px] shadow-xl animate-dropdown z-50">
+                <div className="!absolute top-full left-0 liquid-glass rounded-xl py-3 px-2 min-w-[190px] shadow-xl animate-dropdown z-50">
                   {item.items.map((sub) => (
                     <Link
                       key={sub.label}
@@ -64,13 +92,23 @@ export default function SiteNav() {
               )}
             </div>
           ))}
-          <button
-            onClick={() => navigate("/generator")}
-            className="ml-2 flex items-center gap-1.5 liquid-glass rounded-full px-5 py-2 text-white text-sm font-medium hover:bg-white/5 transition"
-          >
-            Start Building
-            <ArrowRight size={14} />
-          </button>
+
+          {/* Desktop CTA */}
+          <div className="flex items-center gap-2 ml-3">
+            <Link
+              to="/generator"
+              className="px-3 py-2 text-white/90 hover:text-white text-sm font-medium transition"
+            >
+              Log in
+            </Link>
+            <button
+              onClick={() => navigate("/generator")}
+              className="liquid-glass rounded-full px-5 py-2 text-white text-sm font-medium hover:bg-white/5 transition flex items-center gap-1.5"
+            >
+              Try it free
+              <ArrowRight size={14} />
+            </button>
+          </div>
         </div>
 
         {/* Mobile toggle */}
@@ -96,7 +134,7 @@ export default function SiteNav() {
 
       {/* Mobile menu */}
       <div
-        className={`md:hidden absolute left-4 right-4 top-full z-50 overflow-hidden transition-all duration-400 ${
+        className={`md:hidden absolute left-4 right-4 top-full z-50 overflow-hidden duration-400 transition-all ${
           mobileOpen ? "max-h-[28rem] opacity-100 mt-2" : "max-h-0 opacity-0"
         }`}
         style={{ transitionTimingFunction: "cubic-bezier(0.16,1,0.3,1)" }}
@@ -119,7 +157,14 @@ export default function SiteNav() {
               </div>
             </div>
           ))}
-          <div className="pt-4 mt-2 border-t border-white/10">
+          <div className="pt-4 mt-2 border-t border-white/10 flex flex-col gap-2">
+            <Link
+              to="/generator"
+              className="text-center text-white/70 text-sm py-2"
+              onClick={() => setMobileOpen(false)}
+            >
+              Log in
+            </Link>
             <button
               onClick={() => {
                 setMobileOpen(false);
@@ -127,7 +172,7 @@ export default function SiteNav() {
               }}
               className="w-full flex items-center justify-center gap-1.5 liquid-glass rounded-full px-5 py-2.5 text-white text-sm font-medium"
             >
-              Start Building
+              Try it free
               <ArrowRight size={14} />
             </button>
           </div>
