@@ -1,21 +1,100 @@
+import { useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import SiteNav from "../components/SiteNav";
 
+const VIDEO_SRC =
+  "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260703_053131_1ec3dd1c-d627-44fb-ab20-6e1fce41b0d5.mp4";
+
+/** Cross-fades two stacked video elements so the loop appears seamless. */
+function useSeamlessLoop() {
+  const refA = useRef<HTMLVideoElement>(null);
+  const refB = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const va = refA.current;
+    const vb = refB.current;
+    if (!va || !vb) return;
+
+    /* How many seconds before the end we start fading */
+    const FADE_BEFORE = 1.4;
+    /* How long the crossfade lasts in ms — must match the CSS transition */
+    const FADE_MS = 1400;
+
+    let crossfading = false;
+
+    const crossfade = (from: HTMLVideoElement, to: HTMLVideoElement) => {
+      if (crossfading) return;
+      crossfading = true;
+
+      /* Cue the incoming video invisibly, then flip opacities */
+      to.currentTime = 0;
+      to.play().catch(() => {});
+      to.style.opacity = "1";
+      from.style.opacity = "0";
+
+      setTimeout(() => {
+        from.pause();
+        from.currentTime = 0;
+        crossfading = false;
+      }, FADE_MS);
+    };
+
+    const onUpdate = (e: Event) => {
+      const vid = e.target as HTMLVideoElement;
+      /* Only act when this video is the visible one */
+      if (vid.style.opacity !== "1") return;
+      const remaining = vid.duration - vid.currentTime;
+      if (!isNaN(vid.duration) && remaining > 0 && remaining <= FADE_BEFORE) {
+        crossfade(vid, vid === va ? vb : va);
+      }
+    };
+
+    /* Kick off the first video */
+    va.style.opacity = "1";
+    vb.style.opacity = "0";
+    va.play().catch(() => {});
+
+    va.addEventListener("timeupdate", onUpdate);
+    vb.addEventListener("timeupdate", onUpdate);
+
+    return () => {
+      va.removeEventListener("timeupdate", onUpdate);
+      vb.removeEventListener("timeupdate", onUpdate);
+      va.pause();
+      vb.pause();
+    };
+  }, []);
+
+  return { refA, refB };
+}
+
+/* ── Page ─────────────────────────────────────────────────────────────── */
 export default function Landing() {
   const navigate = useNavigate();
+  const { refA, refB } = useSeamlessLoop();
 
   return (
     <section className="relative h-screen w-full overflow-hidden flex flex-col">
 
-      {/* Video background */}
+      {/* ── Two stacked videos for seamless crossfade loop ─────────────── */}
       <video
+        ref={refA}
+        src={VIDEO_SRC}
         className="absolute inset-0 w-full h-full object-cover"
-        src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260703_053131_1ec3dd1c-d627-44fb-ab20-6e1fce41b0d5.mp4"
-        autoPlay
+        style={{ opacity: 1, transition: "opacity 1.4s ease" }}
         muted
-        loop
         playsInline
+        preload="auto"
+      />
+      <video
+        ref={refB}
+        src={VIDEO_SRC}
+        className="absolute inset-0 w-full h-full object-cover"
+        style={{ opacity: 0, transition: "opacity 1.4s ease" }}
+        muted
+        playsInline
+        preload="auto"
       />
 
       {/* Dark overlay */}
