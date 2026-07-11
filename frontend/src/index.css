@@ -54,12 +54,14 @@ h1, h2, h3, .font-display {
   pointer-events: none;
 }
 
+/* ─── Dropdown ───────────────────────────────────────────────────────── */
 @keyframes dropdown-in {
   from { opacity: 0; transform: translateY(-4px) scale(0.97); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 .animate-dropdown { animation: dropdown-in 0.18s ease-out; }
 
+/* ─── Mesh background drift ──────────────────────────────────────────── */
 @keyframes mesh-drift {
   0%, 100% { transform: translate(0, 0) scale(1); }
   33% { transform: translate(3%, -4%) scale(1.05); }
@@ -68,12 +70,84 @@ h1, h2, h3, .font-display {
 .animate-mesh-drift { animation: mesh-drift 18s ease-in-out infinite; }
 .animate-mesh-drift-slow { animation: mesh-drift 26s ease-in-out infinite reverse; }
 
+/* ─── Hero entrance (page load) ──────────────────────────────────────── */
 @keyframes fade-up {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
 .animate-fade-up { animation: fade-up 0.6s cubic-bezier(0.16,1,0.3,1) both; }
 
+/* ─── Scroll-reveal base ─────────────────────────────────────────────── */
+/* Elements start hidden; JS adds .in-view once they enter the viewport */
+.reveal {
+  opacity: 0;
+  transition: opacity 0.65s cubic-bezier(0.16,1,0.3,1),
+              transform 0.65s cubic-bezier(0.16,1,0.3,1);
+  will-change: opacity, transform;
+}
+.reveal.in-view { opacity: 1; transform: none !important; }
+
+/* Variant — slides up */
+.reveal-up   { transform: translateY(28px); }
+/* Variant — slides from left */
+.reveal-left { transform: translateX(-32px); }
+/* Variant — slides from right */
+.reveal-right { transform: translateX(32px); }
+/* Variant — scales in */
+.reveal-scale { transform: scale(0.93); }
+/* Variant — fades only (no translate) */
+.reveal-fade  { transform: none; }
+
+/* ─── Stagger delays (for grids of cards) ────────────────────────────── */
+.stagger-1  { transition-delay: 0.05s; }
+.stagger-2  { transition-delay: 0.12s; }
+.stagger-3  { transition-delay: 0.19s; }
+.stagger-4  { transition-delay: 0.26s; }
+.stagger-5  { transition-delay: 0.33s; }
+
+/* ─── Pulse glow (icon accent ring on hover) ─────────────────────────── */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(124,92,255,0); }
+  50%       { box-shadow: 0 0 0 6px rgba(124,92,255,0.18); }
+}
+.group:hover .pulse-glow { animation: pulse-glow 1.6s ease-in-out infinite; }
+
+/* ─── Shimmer label text ──────────────────────────────────────────────── */
+@keyframes shimmer {
+  from { background-position: -200% center; }
+  to   { background-position:  200% center; }
+}
+.shimmer-text {
+  background: linear-gradient(90deg,
+    rgba(92,240,208,0.6) 0%,
+    rgba(92,240,208,1)   40%,
+    rgba(124,92,255,1)   60%,
+    rgba(92,240,208,0.6) 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 3.5s linear infinite;
+}
+
+/* ─── Floating micro-animation ───────────────────────────────────────── */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-5px); }
+}
+.animate-float { animation: float 3.5s ease-in-out infinite; }
+
+/* ─── Card lift + border glow on hover ───────────────────────────────── */
+.glass-hover {
+  transition: border-color 0.25s, box-shadow 0.25s, transform 0.25s;
+}
+.glass-hover:hover {
+  border-color: rgba(124,92,255,0.25) !important;
+  box-shadow: 0 0 24px -8px rgba(124,92,255,0.18);
+  transform: translateY(-2px);
+}
+
+/* ─── Scrollbar ──────────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-thumb { background: #2a2f3b; border-radius: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }

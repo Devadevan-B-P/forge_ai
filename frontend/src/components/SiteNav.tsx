@@ -14,8 +14,7 @@ const NAV: { label: string; href?: string; items?: { label: string; href: string
   {
     label: "About",
     items: [
-      { label: "How it works", href: "/#how-it-works" },
-      { label: "What you get", href: "/#what-you-get" },
+      { label: "About Forge AI", href: "/about" },
     ],
   },
 ];
