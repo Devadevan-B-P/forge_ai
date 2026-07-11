@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import SiteNav from "../components/SiteNav";
+import Antigravity from "../components/vendor/Antigravity";
 
 export default function Landing() {
   const navigate = useNavigate();
@@ -11,6 +12,26 @@ export default function Landing() {
       <div className="grain-overlay" />
       <div className="animated-vignette" />
       <div className="radial-bg" />
+
+      {/* Interactive Antigravity Canvas Background */}
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+        <Antigravity
+          count={220}
+          magnetRadius={10}
+          ringRadius={7}
+          waveSpeed={0.5}
+          waveAmplitude={1.2}
+          particleSize={1.5}
+          lerpSpeed={0.07}
+          color="#4F9DFF"
+          autoAnimate={true}
+          particleVariance={0.8}
+          depthFactor={0.8}
+          pulseSpeed={2.5}
+          particleShape="capsule"
+          fieldStrength={10}
+        />
+      </div>
 
       {/* Floating Pill Nav */}
       <motion.div
