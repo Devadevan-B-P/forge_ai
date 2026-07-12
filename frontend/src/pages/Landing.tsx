@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import SiteNav from "../components/SiteNav";
 import Antigravity from "../components/vendor/Antigravity";
+import Strands from "../components/vendor/Strands";
 
 export default function Landing() {
   const navigate = useNavigate();
@@ -13,8 +14,25 @@ export default function Landing() {
       <div className="animated-vignette" />
       <div className="radial-bg" />
 
-      {/* Interactive Antigravity Canvas Background */}
+      {/* Interactive Backgrounds */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+        <div className="absolute inset-0 opacity-40">
+          <Strands
+            colors={["#06B6D4", "#7C3AED", "#F97316"]}
+            count={4}
+            speed={0.4}
+            amplitude={1.2}
+            waviness={1.0}
+            thickness={0.8}
+            glow={2.5}
+            taper={2}
+            spread={1.5}
+            intensity={0.6}
+            saturation={1.5}
+            opacity={0.8}
+            scale={1.5}
+          />
+        </div>
         <Antigravity
           count={220}
           magnetRadius={10}
