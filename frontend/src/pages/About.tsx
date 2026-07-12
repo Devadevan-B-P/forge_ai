@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import ScrollStack, { ScrollStackItem } from "../components/vendor/ScrollStack";
 import {
@@ -127,6 +127,117 @@ function PrincipleCard({ p, index }: { p: { icon: LucideIcon; title: string; bod
 export default function About() {
   const navigate = useNavigate();
   const heroContainerRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const imagesRef = useRef<HTMLImageElement[]>([]);
+  const frameCount = 151;
+
+  useEffect(() => {
+    // 1. Preload images
+    const preloadedImages: HTMLImageElement[] = [];
+    let loadedCount = 0;
+
+    const drawImageCover = (ctx: CanvasRenderingContext2D, img: HTMLImageElement) => {
+      const canvas = ctx.canvas;
+      const canvasWidth = canvas.width;
+      const canvasHeight = canvas.height;
+      const imgWidth = img.width || 1920;
+      const imgHeight = img.height || 1080;
+
+      const imgRatio = imgWidth / imgHeight;
+      const canvasRatio = canvasWidth / canvasHeight;
+
+      let drawWidth = canvasWidth;
+      let drawHeight = canvasHeight;
+      let offsetX = 0;
+      let offsetY = 0;
+
+      if (canvasRatio > imgRatio) {
+        drawHeight = canvasWidth / imgRatio;
+        offsetY = (canvasHeight - drawHeight) / 2;
+      } else {
+        drawWidth = canvasHeight * imgRatio;
+        offsetX = (canvasWidth - drawWidth) / 2;
+      }
+
+      ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+      ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
+    };
+
+    for (let i = 0; i < frameCount; i++) {
+      const img = new Image();
+      img.src = `/flower-frames/frame_${i.toString().padStart(3, "0")}.jpg`;
+      img.onload = () => {
+        loadedCount++;
+        if (i === 0 && canvasRef.current) {
+          const ctx = canvasRef.current.getContext("2d");
+          if (ctx) drawImageCover(ctx, img);
+        }
+      };
+      preloadedImages.push(img);
+    }
+    imagesRef.current = preloadedImages;
+
+    // 2. Setup scroll tracking and smooth loop
+    let targetFrame = 0;
+    let currentFrame = 0;
+    const lerpFactor = 0.08;
+    let animationFrameId: number;
+
+    const handleScroll = () => {
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+      if (scrollHeight <= 0) return;
+      const progress = Math.max(0, Math.min(1, scrollTop / scrollHeight));
+      targetFrame = progress * (frameCount - 1);
+    };
+
+    const updateCanvas = () => {
+      currentFrame += (targetFrame - currentFrame) * lerpFactor;
+      
+      const frameIndex = Math.round(currentFrame);
+      const img = imagesRef.current[frameIndex];
+      const canvas = canvasRef.current;
+      if (canvas && img && img.complete) {
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          drawImageCover(ctx, img);
+        }
+      }
+
+      animationFrameId = requestAnimationFrame(updateCanvas);
+    };
+
+    const handleResize = () => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      const frameIndex = Math.round(currentFrame);
+      const img = imagesRef.current[frameIndex];
+      if (img && img.complete) {
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          drawImageCover(ctx, img);
+        }
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("resize", handleResize);
+    
+    handleResize();
+    handleScroll();
+    
+    animationFrameId = requestAnimationFrame(updateCanvas);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", handleResize);
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, []);
 
   const scrollToProcess = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -145,10 +256,18 @@ export default function About() {
   const ctaRef = useInView(0.15);
 
   return (
-    <div className="min-h-screen w-full overflow-x-hidden">
+    <div className="min-h-screen w-full overflow-x-hidden relative">
+      {/* Scroll-driven blooming flower background canvas */}
+      <canvas
+        ref={canvasRef}
+        className="fixed inset-0 w-screen h-screen z-0 pointer-events-none opacity-20"
+      />
 
-      {/* ── Hero ────────────────────────────────────────────────────────── */}
-      <section className="relative min-h-[70vh] w-full overflow-hidden flex flex-col">
+      {/* Content wrapper */}
+      <div className="relative z-10">
+
+        {/* ── Hero ────────────────────────────────────────────────────────── */}
+        <section className="relative min-h-[70vh] w-full overflow-hidden flex flex-col">
 
         <SiteNav />
 
@@ -517,6 +636,7 @@ export default function About() {
       <footer className="px-6 py-8 text-center text-xs text-slate-600">
         Forge AI — an AI software architect, not a code generator.
       </footer>
+      </div>
     </div>
   );
 }
