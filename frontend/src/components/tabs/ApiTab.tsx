@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, Dispatch, SetStateAction } from "react";
 import type { Blueprint, ApiEndpoint } from "../../types/blueprint";
 import { generateEndpointCode } from "../../services/api";
 import CodeModal from "../CodeModal";
@@ -14,19 +14,30 @@ const METHOD_COLOR: Record<string, string> = {
 export default function ApiTab({
   bp,
   framework,
+  cachedApiCodes,
+  setCachedApiCodes,
 }: {
   bp: Blueprint;
   framework: string;
+  cachedApiCodes: Record<string, string>;
+  setCachedApiCodes: Dispatch<SetStateAction<Record<string, string>>>;
 }) {
   const [loadingIdx, setLoadingIdx] = useState<number | null>(null);
   const [code, setCode] = useState<{ title: string; body: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleGenerate = async (endpoint: ApiEndpoint, idx: number) => {
+    const cacheKey = `${endpoint.method}:${endpoint.route}`;
+    if (cachedApiCodes[cacheKey]) {
+      setCode({ title: `${endpoint.method} ${endpoint.route}`, body: cachedApiCodes[cacheKey] });
+      return;
+    }
+
     setLoadingIdx(idx);
     setError(null);
     try {
       const res = await generateEndpointCode(endpoint, framework);
+      setCachedApiCodes((prev) => ({ ...prev, [cacheKey]: res.code }));
       setCode({ title: `${endpoint.method} ${endpoint.route}`, body: res.code });
     } catch (e: any) {
       setError(e?.response?.data?.detail || "Failed to generate endpoint code.");
@@ -65,7 +76,7 @@ export default function ApiTab({
                 ) : (
                   <Code2 size={13} />
                 )}
-                Generate {framework} Code
+                Generate {framework} Codes
               </button>
             </div>
             <div className="mt-3 grid sm:grid-cols-2 gap-3 text-xs">

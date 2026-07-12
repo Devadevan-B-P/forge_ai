@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, Dispatch, SetStateAction } from "react";
 import type { Blueprint, BlueprintConfig } from "../types/blueprint";
 import {
   OverviewTab,
@@ -29,9 +29,17 @@ const TABS = [
 export default function OutputTabs({
   bp,
   config,
+  cachedSql,
+  setCachedSql,
+  cachedApiCodes,
+  setCachedApiCodes,
 }: {
   bp: Blueprint;
   config: BlueprintConfig;
+  cachedSql: string | null;
+  setCachedSql: (sql: string | null) => void;
+  cachedApiCodes: Record<string, string>;
+  setCachedApiCodes: Dispatch<SetStateAction<Record<string, string>>>;
 }) {
   const [active, setActive] = useState<(typeof TABS)[number]>("Overview");
 
@@ -57,9 +65,21 @@ export default function OutputTabs({
         {active === "Features" && <FeaturesTab bp={bp} />}
         {active === "Tech Stack" && <TechStackTab bp={bp} />}
         {active === "Database" && (
-          <DatabaseTab bp={bp} dialect={config.database} />
+          <DatabaseTab
+            bp={bp}
+            dialect={config.database}
+            cachedSql={cachedSql}
+            setCachedSql={setCachedSql}
+          />
         )}
-        {active === "API" && <ApiTab bp={bp} framework={config.backend} />}
+        {active === "API" && (
+          <ApiTab
+            bp={bp}
+            framework={config.backend}
+            cachedApiCodes={cachedApiCodes}
+            setCachedApiCodes={setCachedApiCodes}
+          />
+        )}
         {active === "Folder" && <FolderTab bp={bp} />}
         {active === "AWS" && <AwsTab bp={bp} />}
         {active === "Docker" && <DockerTab bp={bp} />}

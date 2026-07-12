@@ -1,5 +1,6 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
+from app.core.security import get_current_user
 from app.schemas.blueprint import (
     SqlGenerateRequest,
     EndpointGenerateRequest,
@@ -17,7 +18,7 @@ def _friendly_detail(e: Exception, fallback: str) -> tuple[int, str]:
     return 502, f"{fallback}: {msg}"
 
 
-@router.post("/sql", response_model=CodeResponse)
+@router.post("/sql", response_model=CodeResponse, dependencies=[Depends(get_current_user)])
 def sql(req: SqlGenerateRequest):
     try:
         code = generate_sql(req.database, req.dialect)
@@ -29,7 +30,7 @@ def sql(req: SqlGenerateRequest):
         raise HTTPException(status_code=status, detail=detail)
 
 
-@router.post("/endpoint", response_model=CodeResponse)
+@router.post("/endpoint", response_model=CodeResponse, dependencies=[Depends(get_current_user)])
 def endpoint(req: EndpointGenerateRequest):
     try:
         code = generate_endpoint_code(req.endpoint, req.framework)

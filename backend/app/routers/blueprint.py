@@ -1,14 +1,15 @@
 import json
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
+from app.core.security import get_current_user
 from app.schemas.blueprint import BlueprintRequest
 from app.services.gemini_service import generate_blueprint
 
 router = APIRouter(prefix="/api/blueprint", tags=["blueprint"])
 
 
-@router.post("/generate")
+@router.post("/generate", dependencies=[Depends(get_current_user)])
 def generate(req: BlueprintRequest):
     try:
         result = generate_blueprint(req.idea, req.config.model_dump())

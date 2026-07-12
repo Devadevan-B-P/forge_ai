@@ -7,22 +7,31 @@ import { Loader2, Database } from "lucide-react";
 export default function DatabaseTab({
   bp,
   dialect,
+  cachedSql,
+  setCachedSql,
 }: {
   bp: Blueprint;
   dialect: string;
+  cachedSql: string | null;
+  setCachedSql: (sql: string | null) => void;
 }) {
   const [loading, setLoading] = useState(false);
-  const [code, setCode] = useState<string | null>(null);
+  const [showCode, setShowCode] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleGenerate = async () => {
+    if (cachedSql) {
+      setShowCode(true);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
       const res = await generateSql(bp.database, dialect);
-      setCode(res.code);
+      setCachedSql(res.code);
+      setShowCode(true);
     } catch (e: any) {
-      setError(e?.response?.data?.detail || "Failed to generate SQL.");
+      setError(e?.response?.data?.detail || "Failed to generate Schema.");
     } finally {
       setLoading(false);
     }
@@ -40,7 +49,7 @@ export default function DatabaseTab({
           className="flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-lg bg-accent/20 border border-accent/40 text-accent2 hover:bg-accent/30 transition disabled:opacity-50"
         >
           {loading ? <Loader2 size={14} className="animate-spin" /> : <Database size={14} />}
-          Generate SQL
+          Generate Schema
         </button>
       </div>
       {error && <p className="text-red-400 text-xs mb-3">{error}</p>}
@@ -91,8 +100,8 @@ export default function DatabaseTab({
         </div>
       )}
 
-      {code && (
-        <CodeModal title={`${dialect} Schema`} code={code} onClose={() => setCode(null)} />
+      {showCode && cachedSql && (
+        <CodeModal title={`${dialect} Schema`} code={cachedSql} onClose={() => setShowCode(false)} />
       )}
     </div>
   );

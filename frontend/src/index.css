@@ -193,3 +193,37 @@ html.lenis, html.lenis body {
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-thumb { background: #2a2f3b; border-radius: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
+
+/* ─── Cursor Blink & Fade-in Animations ───────────────────────────────── */
+@keyframes blink {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; }
+}
+.animate-blink {
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fadeIn 0.25s ease-out forwards;
+}
+
+/* ─── Page Transition ─────────────────────────────────────────────── */
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.985);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0px);
+  }
+}
+.page-enter {
+  animation: pageEnter 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}

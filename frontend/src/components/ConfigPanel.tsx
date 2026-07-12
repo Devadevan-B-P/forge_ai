@@ -26,23 +26,31 @@ export default function ConfigPanel({
   onChange: (c: BlueprintConfig) => void;
 }) {
   return (
-    <div className="glass rounded-2xl p-5 grid grid-cols-2 sm:grid-cols-3 gap-4">
+    <div className="glass rounded-2xl p-5 flex flex-col gap-5 border border-white/10">
       {(Object.keys(OPTIONS) as (keyof BlueprintConfig)[]).map((key) => (
-        <div key={key}>
-          <label className="block text-xs uppercase tracking-wide text-slate-400 mb-1.5">
+        <div key={key} className="flex flex-col gap-2">
+          <label className="block text-xs uppercase tracking-wider text-slate-400 font-semibold">
             {LABELS[key]}
           </label>
-          <select
-            value={config[key]}
-            onChange={(e) => onChange({ ...config, [key]: e.target.value })}
-            className="w-full bg-panel border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-accent"
-          >
-            {OPTIONS[key].map((opt) => (
-              <option key={opt} value={opt}>
-                {opt}
-              </option>
-            ))}
-          </select>
+          <div className="flex flex-wrap gap-2">
+            {OPTIONS[key].map((opt) => {
+              const isActive = config[key] === opt;
+              return (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => onChange({ ...config, [key]: opt as any })}
+                  className={`text-[11px] px-3.5 py-1.5 rounded-full border transition-all duration-200 cursor-pointer font-sans font-medium ${
+                    isActive
+                      ? "bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.3)] scale-[1.03]"
+                      : "bg-transparent text-slate-400 border-white/10 hover:border-white/20 hover:text-slate-200 hover:scale-[1.01]"
+                  }`}
+                >
+                  {opt}
+                </button>
+              );
+            })}
+          </div>
         </div>
       ))}
     </div>

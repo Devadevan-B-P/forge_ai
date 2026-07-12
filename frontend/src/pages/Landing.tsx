@@ -1,14 +1,13 @@
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import SiteNav from "../components/SiteNav";
-import Antigravity from "../components/vendor/Antigravity";
 import Strands from "../components/vendor/Strands";
 
 export default function Landing() {
   const navigate = useNavigate();
 
   return (
-    <div className="relative h-screen w-full bg-[#050505] text-white overflow-hidden select-none">
+    <div className="page-enter relative h-screen w-full bg-[#050505] text-white overflow-hidden select-none">
       {/* Background Atmosphere Overlays */}
       <div className="grain-overlay" />
       <div className="animated-vignette" />
@@ -33,22 +32,6 @@ export default function Landing() {
             scale={1.5}
           />
         </div>
-        <Antigravity
-          count={220}
-          magnetRadius={10}
-          ringRadius={7}
-          waveSpeed={0.5}
-          waveAmplitude={1.2}
-          particleSize={1.5}
-          lerpSpeed={0.07}
-          color="#4F9DFF"
-          autoAnimate={true}
-          particleVariance={0.8}
-          depthFactor={0.8}
-          pulseSpeed={2.5}
-          particleShape="capsule"
-          fieldStrength={10}
-        />
       </div>
 
       {/* Floating Pill Nav */}
