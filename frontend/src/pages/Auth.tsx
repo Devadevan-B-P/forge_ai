@@ -1,9 +1,9 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
-  Eye, EyeOff, Loader2, Sparkles, ArrowRight, Lock, Mail, User,
+  Eye, EyeOff, Loader2, ArrowRight, Lock, Mail, User,
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../hooks/useAuth";
 import SiteNav from "../components/SiteNav";
 import Strands from "../components/vendor/Strands";
@@ -148,27 +148,38 @@ export default function Auth() {
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
 
               {/* Name — signup only */}
-              {mode === "signup" && (
-                <div className="relative">
-                  <User
-                    size={14}
-                    className={`absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors ${
-                      focusedField === "name" ? "text-[#5FA9FF]" : "text-[#9CA3AF]"
-                    }`}
-                  />
-                  <input
-                    id="auth-name"
-                    type="text"
-                    required
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    onFocus={() => setFocusedField("name")}
-                    onBlur={() => setFocusedField(null)}
-                    placeholder="Full name"
-                    className="w-full bg-[#050505]/40 border border-[#22252B] rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder:text-[#9CA3AF]/40 focus:outline-none focus:border-[#5FA9FF] focus:ring-1 focus:ring-[#5FA9FF] transition-all"
-                  />
-                </div>
-              )}
+              <AnimatePresence initial={false}>
+                {mode === "signup" && (
+                  <motion.div
+                    key="name-field"
+                    initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+                    animate={{ opacity: 1, height: "auto", marginBottom: 16 }}
+                    exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                    transition={{ duration: 0.25, ease: "easeInOut" }}
+                    className="overflow-hidden"
+                  >
+                    <div className="relative">
+                      <User
+                        size={14}
+                        className={`absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors ${
+                          focusedField === "name" ? "text-[#5FA9FF]" : "text-[#9CA3AF]"
+                        }`}
+                      />
+                      <input
+                        id="auth-name"
+                        type="text"
+                        required
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        onFocus={() => setFocusedField("name")}
+                        onBlur={() => setFocusedField(null)}
+                        placeholder="Full name"
+                        className="w-full bg-[#050505]/40 border border-[#22252B] rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder:text-[#9CA3AF]/40 focus:outline-none focus:border-[#5FA9FF] focus:ring-1 focus:ring-[#5FA9FF] transition-all"
+                      />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {/* Email */}
               <div className="relative">
@@ -223,39 +234,48 @@ export default function Auth() {
               </div>
 
               {/* Password strength meter — signup only */}
-              {mode === "signup" && password.length > 0 && (
-                <div className="space-y-2">
-                  <div className="flex gap-1">
-                    {[0, 1, 2].map((i) => (
-                      <div
-                        key={i}
-                        className={`h-1 flex-1 rounded-full transition-all duration-300 ${
-                          i < passwordStrength
-                            ? passwordStrength === 1 ? "bg-red-500/80"
-                            : passwordStrength === 2 ? "bg-yellow-500/80"
-                            : "bg-[#3DD9A4]"
-                            : "bg-white/5"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    {PASSWORD_RULES.map((rule) => (
-                      <span
-                        key={rule.label}
-                        className={`text-[11px] flex items-center gap-1.5 transition-colors ${
-                          rule.test(password) ? "text-[#3DD9A4]" : "text-[#9CA3AF]"
-                        }`}
-                      >
-                        <span className="w-3 h-3 rounded-full border flex items-center justify-center text-[8px] shrink-0 border-current">
-                          {rule.test(password) ? "✓" : ""}
+              <AnimatePresence initial={false}>
+                {mode === "signup" && password.length > 0 && (
+                  <motion.div
+                    key="password-strength"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.25, ease: "easeInOut" }}
+                    className="space-y-2 overflow-hidden"
+                  >
+                    <div className="flex gap-1">
+                      {[0, 1, 2].map((i) => (
+                        <div
+                          key={i}
+                          className={`h-1 flex-1 rounded-full transition-all duration-300 ${
+                            i < passwordStrength
+                              ? passwordStrength === 1 ? "bg-red-500/80"
+                              : passwordStrength === 2 ? "bg-yellow-500/80"
+                              : "bg-[#3DD9A4]"
+                              : "bg-white/5"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      {PASSWORD_RULES.map((rule) => (
+                        <span
+                          key={rule.label}
+                          className={`text-[11px] flex items-center gap-1.5 transition-colors ${
+                            rule.test(password) ? "text-[#3DD9A4]" : "text-[#9CA3AF]"
+                          }`}
+                        >
+                          <span className="w-3 h-3 rounded-full border flex items-center justify-center text-[8px] shrink-0 border-current">
+                            {rule.test(password) ? "✓" : ""}
+                          </span>
+                          {rule.label}
                         </span>
-                        {rule.label}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {/* Error message */}
               {error && (
@@ -268,14 +288,27 @@ export default function Auth() {
               <button
                 type="submit"
                 disabled={loading}
-                className="mt-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-white text-[#050505] font-semibold hover:bg-[#7AB8FF] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                className="mt-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-white text-[#050505] font-semibold hover:bg-[#7AB8FF] transition-all disabled:opacity-60 disabled:cursor-not-allowed h-[46px]"
               >
                 {loading ? (
                   <Loader2 size={16} className="animate-spin" />
-                ) : mode === "login" ? (
-                  <><Sparkles size={16} /> Sign In</>
                 ) : (
-                  <><ArrowRight size={16} /> Create Account</>
+                  <AnimatePresence mode="wait" initial={false}>
+                    <motion.span
+                      key={mode}
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -5 }}
+                      transition={{ duration: 0.15 }}
+                      className="flex items-center justify-center gap-2"
+                    >
+                      {mode === "login" ? (
+                        "Sign In"
+                      ) : (
+                        <><ArrowRight size={16} /> Create Account</>
+                      )}
+                    </motion.span>
+                  </AnimatePresence>
                 )}
               </button>
             </form>

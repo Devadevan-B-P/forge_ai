@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 from app.core.database import connect_db, close_db
+from app.core.security_middleware import SecurityMiddleware
 from app.routers import blueprint, generators, auth
 
 
@@ -20,6 +21,9 @@ app = FastAPI(
     description="AI Software Project Architect API",
     lifespan=lifespan,
 )
+
+# Security middleware runs first (rate limiting + injection checks)
+app.add_middleware(SecurityMiddleware)
 
 app.add_middleware(
     CORSMiddleware,

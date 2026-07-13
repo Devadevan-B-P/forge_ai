@@ -14,12 +14,12 @@ router = APIRouter(prefix="/api/generate", tags=["generators"])
 def _friendly_detail(e: Exception, fallback: str) -> tuple[int, str]:
     msg = str(e)
     if "deadline" in msg.lower() or "timeout" in msg.lower():
-        return 504, "Gemini took too long to respond. Try again in a moment."
+        return 504, "The AI model took too long to respond. Please try again in a moment."
     return 502, f"{fallback}: {msg}"
 
 
 @router.post("/sql", response_model=CodeResponse, dependencies=[Depends(get_current_user)])
-def sql(req: SqlGenerateRequest):
+async def sql(req: SqlGenerateRequest):
     try:
         code = generate_sql(req.database, req.dialect)
         return CodeResponse(code=code, language="sql")
@@ -31,7 +31,7 @@ def sql(req: SqlGenerateRequest):
 
 
 @router.post("/endpoint", response_model=CodeResponse, dependencies=[Depends(get_current_user)])
-def endpoint(req: EndpointGenerateRequest):
+async def endpoint(req: EndpointGenerateRequest):
     try:
         code = generate_endpoint_code(req.endpoint, req.framework)
         lang = "python" if req.framework.lower() == "fastapi" else "javascript"
