@@ -53,3 +53,16 @@ export async function generateEndpointCode(endpoint: unknown, framework: string)
   );
   return data;
 }
+
+export async function sendContactMessage(payload: {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+}) {
+  const { data } = await client.post<{ success: boolean; message: string }>(
+    "/contact/send",
+    payload
+  );
+  return data;
+}

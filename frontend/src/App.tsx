@@ -4,6 +4,7 @@ import Landing from "./pages/Landing";
 import Generator from "./pages/Generator";
 import About from "./pages/About";
 import Auth from "./pages/Auth";
+import Contact from "./pages/Contact";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 export default function App() {
@@ -12,6 +13,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/about" element={<About />} />
+        <Route path="/contact" element={<Contact />} />
         <Route path="/auth" element={<Auth />} />
         <Route
           path="/generator"

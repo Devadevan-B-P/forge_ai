@@ -12,11 +12,13 @@ export default function SiteNav() {
   const links = [
     { label: "Home", href: "/" },
     { label: "About", href: "/about" },
-    { label: "Contact", href: "#contact" },
+    { label: "Contact", href: "/contact" },
   ];
 
   // Determine active index based on pathName
-  const activeIndex = location.pathname === "/about" ? 1 : 0;
+  const activeIndex =
+    location.pathname === "/about" ? 1 :
+    location.pathname === "/contact" ? 2 : 0;
 
   return (
     <header className="fixed top-6 left-0 right-0 w-full z-50 flex justify-center px-4">
