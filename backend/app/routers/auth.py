@@ -59,10 +59,15 @@ async def login(body: LoginRequest):
     db = get_db()
 
     user = await db["users"].find_one({"email": body.email})
-    if not user or not verify_password(body.password, user["password_hash"]):
+    if not user:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password.",
+            status_code=404,
+            detail="No account found with this email. Sign up to get started!",
+        )
+    if not verify_password(body.password, user["password_hash"]):
+        raise HTTPException(
+            status_code=401,
+            detail="Incorrect password — try again!",
         )
 
     # Update last login time
