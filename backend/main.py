@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import connect_db, close_db
 from app.core.security_middleware import SecurityMiddleware
-from app.routers import blueprint, generators, auth, contact
+from app.routers import blueprint, generators, auth, contact, history
 
 
 @asynccontextmanager
@@ -37,6 +37,7 @@ app.include_router(auth.router)
 app.include_router(blueprint.router)
 app.include_router(generators.router)
 app.include_router(contact.router)
+app.include_router(history.router)
 
 
 @app.get("/api/health")

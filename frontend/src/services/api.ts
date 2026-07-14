@@ -30,11 +30,33 @@ client.interceptors.response.use(
   }
 );
 
+export interface HistoryItem {
+  id: string;
+  idea: string;
+  config: BlueprintConfig;
+  created_at: string;
+}
+
 export async function generateBlueprint(
   idea: string,
   config: BlueprintConfig
-): Promise<Blueprint> {
-  const { data } = await client.post("/blueprint/generate", { idea, config });
+): Promise<{ id: string; blueprint: Blueprint }> {
+  const { data } = await client.post<{ id: string; blueprint: Blueprint }>("/blueprint/generate", { idea, config });
+  return data;
+}
+
+export async function fetchHistory(): Promise<HistoryItem[]> {
+  const { data } = await client.get<HistoryItem[]>("/history");
+  return data;
+}
+
+export async function fetchHistoryDetail(id: string): Promise<{ _id: string; idea: string; config: BlueprintConfig; blueprint: Blueprint; created_at: string }> {
+  const { data } = await client.get<any>(`/history/${id}`);
+  return data;
+}
+
+export async function deleteHistory(id: string): Promise<{ success: boolean }> {
+  const { data } = await client.delete<{ success: boolean }>(`/history/${id}`);
   return data;
 }
 

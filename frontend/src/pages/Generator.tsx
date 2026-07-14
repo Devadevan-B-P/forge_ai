@@ -2,11 +2,18 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Loader2, Sparkles, RotateCcw, Download, FileText, LogOut,
-  Cpu, Zap, ChevronRight,
+  Cpu, Zap, ChevronRight, Plus, Trash2, FolderCode
 } from "lucide-react";
 import ConfigPanel from "../components/ConfigPanel";
 import OutputTabs from "../components/OutputTabs";
-import { generateBlueprint, getErrorMessage } from "../services/api";
+import {
+  generateBlueprint,
+  getErrorMessage,
+  fetchHistory,
+  fetchHistoryDetail,
+  deleteHistory,
+  type HistoryItem,
+} from "../services/api";
 import type { Blueprint, BlueprintConfig } from "../types/blueprint";
 import { jsPDF } from "jspdf";
 import { useAuth } from "../hooks/useAuth";
@@ -126,12 +133,69 @@ export default function Generator() {
   const [cachedSql, setCachedSql] = useState<string | null>(null);
   const [cachedApiCodes, setCachedApiCodes] = useState<Record<string, string>>({});
 
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [activeHistoryId, setActiveHistoryId] = useState<string | null>(null);
+
   const typingTimeoutRef = useRef<number | null>(null);
   const outputRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+
+  // Fetch history list on mount
+  useEffect(() => {
+    const loadHistory = async () => {
+      try {
+        const data = await fetchHistory();
+        setHistory(data);
+      } catch (err) {
+        console.error("Failed to load history:", err);
+      }
+    };
+    loadHistory();
+  }, []);
+
+  const handleSelectHistory = async (id: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await fetchHistoryDetail(id);
+      setActiveHistoryId(id);
+      setIdea(data.idea);
+      setConfig(data.config);
+      setBlueprint(data.blueprint);
+      setCachedSql(null);
+      setCachedApiCodes({});
+      setTimeout(() => outputRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+    } catch (err: any) {
+      setError(getErrorMessage(err, "Failed to load project details."));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleNewProject = () => {
+    setActiveHistoryId(null);
+    setIdea("");
+    setBlueprint(null);
+    setCachedSql(null);
+    setCachedApiCodes({});
+    setConfig(DEFAULT_CONFIG);
+  };
+
+  const handleDeleteHistory = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    try {
+      await deleteHistory(id);
+      setHistory((prev) => prev.filter((item) => item.id !== id));
+      if (activeHistoryId === id) {
+        handleNewProject();
+      }
+    } catch (err: any) {
+      alert(getErrorMessage(err, "Failed to delete project."));
+    }
+  };
 
   useEffect(() => {
     if (!loading) return;
@@ -161,10 +225,14 @@ export default function Generator() {
     setLoading(true);
     setError(null);
     try {
-      const bp = await generateBlueprint(idea, config);
-      setBlueprint(bp);
+      const res = await generateBlueprint(idea, config);
+      setBlueprint(res.blueprint);
+      setActiveHistoryId(res.id);
       setCachedSql(null);
       setCachedApiCodes({});
+      // Refresh history list
+      const updatedHistory = await fetchHistory();
+      setHistory(updatedHistory);
       setTimeout(() => outputRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
     } catch (e: any) {
       setError(getErrorMessage(e, "Failed to generate blueprint."));
@@ -376,7 +444,7 @@ export default function Generator() {
       {/* Grain overlay */}
       <div className="grain-overlay fixed inset-0 z-0 pointer-events-none opacity-[0.03]" />
 
-      <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         {/* ── Top Navigation ── */}
         <header className="flex items-center justify-between mb-12">
@@ -394,7 +462,7 @@ export default function Generator() {
 
           <div className="flex items-center gap-3">
             <span className="text-xs hidden sm:block" style={{ color: "#9CA3AF" }}>
-              {user?.email}
+              {user?.name || user?.email}
             </span>
             <button
               onClick={() => { logout(); navigate("/auth"); }}
@@ -412,6 +480,68 @@ export default function Generator() {
             </button>
           </div>
         </header>
+
+        {/* Sidebar + Main Content Flex Layout */}
+        <div className="flex flex-col lg:flex-row gap-8 items-start w-full">
+          {/* LEFT SIDEBAR: Chat History */}
+          <aside className="w-full lg:w-64 shrink-0 rounded-2xl p-5 flex flex-col gap-4 bg-[#0E1014] border border-[#22252B] relative z-20">
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "#5FA9FF" }}>
+                Projects History
+              </h3>
+              <p className="text-[10px] leading-relaxed text-[#9CA3AF]">
+                Manage your saved blueprints
+              </p>
+            </div>
+
+            <button
+              onClick={handleNewProject}
+              className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-xs font-medium bg-white text-[#050505] hover:bg-[#7AB8FF] transition-all"
+            >
+              <Plus size={14} />
+              New Project
+            </button>
+
+            <div className="flex flex-col gap-2 max-h-[400px] overflow-y-auto pr-1">
+              {history.length === 0 ? (
+                <div className="text-center py-6 text-[11px] text-[#9CA3AF]/60 italic">
+                  No saved projects yet
+                </div>
+              ) : (
+                history.map((item) => {
+                  const isActive = item.id === activeHistoryId;
+                  return (
+                    <div
+                      key={item.id}
+                      onClick={() => handleSelectHistory(item.id)}
+                      className={`group flex items-center justify-between gap-2 py-2 px-3 rounded-lg cursor-pointer transition-all duration-200 ${
+                        isActive
+                          ? "bg-[#5FA9FF]/10 border border-[#5FA9FF]/30 text-white"
+                          : "bg-white/5 border border-white/5 text-[#9CA3AF] hover:text-white hover:bg-white/10"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <FolderCode size={13} className={isActive ? "text-[#5FA9FF]" : "text-[#9CA3AF]"} />
+                        <span className="text-[11px] font-medium truncate flex-1 leading-tight">
+                          {item.idea}
+                        </span>
+                      </div>
+                      <button
+                        onClick={(e) => handleDeleteHistory(e, item.id)}
+                        className="text-[#9CA3AF]/50 hover:text-red-400 p-0.5 rounded transition-colors"
+                        title="Delete project"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </aside>
+
+          {/* RIGHT CONTENT: Hero + Main Grid + Output + Footer */}
+          <div className="flex-1 min-w-0 w-full">
 
         {/* ── Hero heading ── */}
         <div className="mb-10">
@@ -670,6 +800,8 @@ export default function Generator() {
             <span style={{ color: "#5FA9FF" }}>Made for builders.</span>
           </p>
         </footer>
+          </div>
+        </div>
       </div>
     </div>
   );
