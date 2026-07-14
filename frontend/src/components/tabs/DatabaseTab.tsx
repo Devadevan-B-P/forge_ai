@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { Blueprint } from "../../types/blueprint";
-import { generateSql } from "../../services/api";
+import { generateSql, getErrorMessage } from "../../services/api";
 import CodeModal from "../CodeModal";
 import { Loader2, Database } from "lucide-react";
 
@@ -31,7 +31,7 @@ export default function DatabaseTab({
       setCachedSql(res.code);
       setShowCode(true);
     } catch (e: any) {
-      setError(e?.response?.data?.detail || "Failed to generate Schema.");
+      setError(getErrorMessage(e, "Failed to generate Schema."));
     } finally {
       setLoading(false);
     }

@@ -1,6 +1,6 @@
 import { useState, Dispatch, SetStateAction } from "react";
 import type { Blueprint, ApiEndpoint } from "../../types/blueprint";
-import { generateEndpointCode } from "../../services/api";
+import { generateEndpointCode, getErrorMessage } from "../../services/api";
 import CodeModal from "../CodeModal";
 import { Loader2, Code2 } from "lucide-react";
 
@@ -40,7 +40,7 @@ export default function ApiTab({
       setCachedApiCodes((prev) => ({ ...prev, [cacheKey]: res.code }));
       setCode({ title: `${endpoint.method} ${endpoint.route}`, body: res.code });
     } catch (e: any) {
-      setError(e?.response?.data?.detail || "Failed to generate endpoint code.");
+      setError(getErrorMessage(e, "Failed to generate endpoint code."));
     } finally {
       setLoadingIdx(null);
     }

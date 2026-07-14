@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     contact_email_pass: str = ""  # Gmail App Password (not your regular password)
 
     # MongoDB
-    mongodb_uri: str = "mongodb://localhost:27017"
+    mongodb_uri: str = ""
     mongodb_db: str = "forge_ai"
 
     # JWT

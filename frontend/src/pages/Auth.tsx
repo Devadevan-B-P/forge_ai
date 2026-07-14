@@ -9,6 +9,7 @@ import SiteNav from "../components/SiteNav";
 import Strands from "../components/vendor/Strands";
 import ShinyText from "../components/vendor/ShinyText";
 import SpotlightCard from "../components/vendor/SpotlightCard";
+import { getErrorMessage } from "../services/api";
 
 type Mode = "login" | "signup";
 
@@ -48,11 +49,7 @@ export default function Auth() {
       }
       navigate(from, { replace: true });
     } catch (err: any) {
-      const msg =
-        err?.response?.data?.detail ||
-        (typeof err?.response?.data === "string" ? err.response.data : null) ||
-        "Something went wrong. Please try again.";
-      setError(msg);
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }

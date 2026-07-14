@@ -1,3 +1,4 @@
+import urllib.parse
 from motor.motor_asyncio import AsyncIOMotorClient
 from app.core.config import settings
 
@@ -14,13 +15,45 @@ def get_db():
     return get_client()[settings.mongodb_db]
 
 
+def clean_mongodb_uri(uri: str) -> str:
+    if not uri.startswith("mongodb://") and not uri.startswith("mongodb+srv://"):
+        return uri
+    
+    scheme, rest = uri.split("://", 1)
+    parts = rest.split("/", 1)
+    host_creds = parts[0]
+    path_options = "/" + parts[1] if len(parts) > 1 else ""
+    
+    if "@" in host_creds:
+        creds, host = host_creds.rsplit("@", 1)
+        if ":" in creds:
+            username, password = creds.split(":", 1)
+            escaped_username = urllib.parse.quote_plus(urllib.parse.unquote(username))
+            escaped_password = urllib.parse.quote_plus(urllib.parse.unquote(password))
+            host_creds = f"{escaped_username}:{escaped_password}@{host}"
+            
+    return f"{scheme}://{host_creds}{path_options}"
+
+
 async def connect_db():
     global _client
+    
+    # Enforce Atlas / Cloud only database
+    if not settings.mongodb_uri:
+        print("[WARN] MONGODB_URI is not set. Auth features will be unavailable.")
+        _client = None
+        return
+        
+    if "localhost" in settings.mongodb_uri or "127.0.0.1" in settings.mongodb_uri:
+        raise RuntimeError("Local MongoDB connections are disabled. Please configure MongoDB Atlas in your .env.")
+
+    cleaned_uri = clean_mongodb_uri(settings.mongodb_uri)
+
     try:
-        _client = AsyncIOMotorClient(settings.mongodb_uri, serverSelectionTimeoutMS=5000)
+        _client = AsyncIOMotorClient(cleaned_uri, serverSelectionTimeoutMS=5000)
         # Verify the connection is alive
         await _client.admin.command("ping")
-        print("[OK] Connected to MongoDB:", settings.mongodb_uri)
+        print("[OK] Connected to MongoDB Atlas")
     except Exception as e:
         _client = None
         print(f"[WARN] MongoDB connection failed: {e}. Auth features will be unavailable.")

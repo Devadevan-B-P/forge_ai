@@ -66,3 +66,17 @@ export async function sendContactMessage(payload: {
   );
   return data;
 }
+
+export function getErrorMessage(err: any, fallback = "Something went wrong. Please try again."): string {
+  const detail = err?.response?.data?.detail;
+  if (typeof detail === "string") {
+    return detail;
+  }
+  if (Array.isArray(detail)) {
+    return detail.map((d: any) => d.msg || JSON.stringify(d)).join(" ");
+  }
+  if (typeof err?.response?.data === "string") {
+    return err.response.data;
+  }
+  return err?.message || fallback;
+}

@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import ConfigPanel from "../components/ConfigPanel";
 import OutputTabs from "../components/OutputTabs";
-import { generateBlueprint } from "../services/api";
+import { generateBlueprint, getErrorMessage } from "../services/api";
 import type { Blueprint, BlueprintConfig } from "../types/blueprint";
 import { jsPDF } from "jspdf";
 import { useAuth } from "../hooks/useAuth";
@@ -167,7 +167,7 @@ export default function Generator() {
       setCachedApiCodes({});
       setTimeout(() => outputRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
     } catch (e: any) {
-      setError(e?.response?.data?.detail || "Failed to generate blueprint.");
+      setError(getErrorMessage(e, "Failed to generate blueprint."));
     } finally {
       setLoading(false);
     }
