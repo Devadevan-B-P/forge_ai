@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from app.core.security import get_current_user
 from app.schemas.blueprint import BlueprintRequest
-from app.services.gemini_service import generate_blueprint
+from app.services.groq_service import generate_blueprint
 
 router = APIRouter(prefix="/api/blueprint", tags=["blueprint"])
 

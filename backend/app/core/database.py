@@ -20,9 +20,9 @@ async def connect_db():
     # Verify the connection is alive
     try:
         await _client.admin.command("ping")
-        print("✅ Connected to MongoDB:", settings.mongodb_uri)
+        print("[OK] Connected to MongoDB:", settings.mongodb_uri)
     except Exception as e:
-        print(f"⚠️  MongoDB connection failed: {e}. Auth features will be unavailable.")
+        print(f"[WARN] MongoDB connection failed: {e}. Auth features will be unavailable.")
 
 
 async def close_db():

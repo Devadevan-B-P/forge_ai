@@ -2,8 +2,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    gemini_api_key: str = ""
-    gemini_model: str = "gemini-3.1-flash-lite"
+    groq_api_key: str = ""
+    groq_model: str = "qwen/qwen3-32b"
     frontend_origin: str = "http://localhost:5173"
 
     # Contact form email

@@ -59,10 +59,10 @@ forge-ai/
   backend/
     main.py                    FastAPI app entrypoint
     app/
-      core/config.py           env settings (Gemini key/model, CORS origin)
+      core/config.py           env settings (Groq key/model, CORS origin)
       schemas/blueprint.py     Pydantic request/response models
       prompts/system_prompt.py the architect system prompt + JSON schema
-      services/gemini_service.py Gemini calls (blueprint, SQL, endpoint code)
+      services/groq_service.py Groq calls (blueprint, SQL, endpoint code)
       routers/blueprint.py     POST /api/blueprint/generate
       routers/generators.py    POST /api/generate/sql, /api/generate/endpoint
   frontend/

@@ -6,7 +6,7 @@ from app.schemas.blueprint import (
     EndpointGenerateRequest,
     CodeResponse,
 )
-from app.services.gemini_service import generate_sql, generate_endpoint_code
+from app.services.groq_service import generate_sql, generate_endpoint_code
 
 router = APIRouter(prefix="/api/generate", tags=["generators"])
 
