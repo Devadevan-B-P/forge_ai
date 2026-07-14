@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import ConfigPanel from "../components/ConfigPanel";
 import OutputTabs from "../components/OutputTabs";
+import ConfirmDeleteModal from "../components/ConfirmDeleteModal";
 import {
   generateBlueprint,
   getErrorMessage,
@@ -135,6 +136,7 @@ export default function Generator() {
 
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [activeHistoryId, setActiveHistoryId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const typingTimeoutRef = useRef<number | null>(null);
   const outputRef = useRef<HTMLDivElement>(null);
@@ -184,10 +186,15 @@ export default function Generator() {
     setConfig(DEFAULT_CONFIG);
   };
 
-  const handleDeleteHistory = async (e: React.MouseEvent, id: string) => {
+  const handleDeleteHistory = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    const confirmDelete = window.confirm("Are you sure you want to permanently delete this project blueprint?");
-    if (!confirmDelete) return;
+    setDeleteConfirmId(id);
+  };
+
+  const handleDeleteHistoryConfirm = async () => {
+    if (!deleteConfirmId) return;
+    const id = deleteConfirmId;
+    setDeleteConfirmId(null);
 
     try {
       await deleteHistory(id);
@@ -438,7 +445,7 @@ export default function Generator() {
 
   return (
     <div
-      className="min-h-screen text-white"
+      className="min-h-screen text-white page-enter"
       style={{ fontFamily: "'Inter', sans-serif", background: "#050505" }}
     >
       {/* Ambient glow blobs */}
@@ -809,6 +816,14 @@ export default function Generator() {
         </footer>
           </div>
         </div>
+        {deleteConfirmId && (
+          <ConfirmDeleteModal
+            title="Delete Project"
+            message="Are you sure you want to permanently delete this project blueprint? This action cannot be undone."
+            onConfirm={handleDeleteHistoryConfirm}
+            onClose={() => setDeleteConfirmId(null)}
+          />
+        )}
       </div>
     </div>
   );
