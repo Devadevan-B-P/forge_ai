@@ -18,7 +18,7 @@ def _get_client():
     return _client
 
 
-REQUEST_TIMEOUT_SECONDS = 45
+REQUEST_TIMEOUT_SECONDS = 60
 
 
 def generate_blueprint(idea: str, config: dict) -> dict:
@@ -32,6 +32,7 @@ def generate_blueprint(idea: str, config: dict) -> dict:
         messages=messages,
         temperature=0.4,
         response_format={"type": "json_object"},
+        max_tokens=4096,
         timeout=REQUEST_TIMEOUT_SECONDS,
     )
     return json.loads(response.choices[0].message.content)
@@ -50,6 +51,7 @@ Schema:
         model=settings.groq_model,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.2,
+        max_tokens=4096,
         timeout=REQUEST_TIMEOUT_SECONDS,
     )
     return _strip_code_fence(response.choices[0].message.content)
@@ -71,6 +73,7 @@ Endpoint spec:
         model=settings.groq_model,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.2,
+        max_tokens=4096,
         timeout=REQUEST_TIMEOUT_SECONDS,
     )
     return _strip_code_fence(response.choices[0].message.content)

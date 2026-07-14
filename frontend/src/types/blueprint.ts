@@ -35,7 +35,39 @@ export interface TimelinePhase {
   days: number;
 }
 
+export interface PromptAnalysis {
+  industry: string;
+  businessType: string;
+  complexity: string;
+  expectedUsers: string;
+  scale: string;
+  budget: string;
+  cloudRequirements: string;
+  compliance: string;
+  estimatedTimeline: string;
+}
+
+export interface PrdStructure {
+  documentMetadata: {
+    ownership: string;
+    deploymentTarget: string;
+    versionStatus: string;
+  };
+  executiveSummary: string;
+  userPersonas: Array<{ persona: string; description: string }>;
+  functionalRequirements: Array<{ requirement: string; priority: string }>;
+  uxDesign: {
+    interfaceOverview: string;
+    layoutDescription: string;
+  };
+  nonFunctionalRequirements: Array<{ requirement: string; type: string }>;
+  metricsSuccess: Array<{ metric: string; target: string }>;
+  risksDependencies: Array<{ risk: string; mitigation: string }>;
+}
+
 export interface Blueprint {
+  promptAnalysis: PromptAnalysis;
+  prd: PrdStructure;
   overview: string;
   features: { user: string[]; admin: string[]; system: string[] };
   techStack: Record<string, string[]>;

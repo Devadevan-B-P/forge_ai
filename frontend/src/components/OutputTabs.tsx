@@ -9,11 +9,15 @@ import {
   DockerTab,
   TimelineTab,
   SecurityTab,
+  PromptAnalysisTab,
+  PrdTab,
 } from "./tabs/SimpleTabs";
 import DatabaseTab from "./tabs/DatabaseTab";
 import ApiTab from "./tabs/ApiTab";
 
 const TABS = [
+  "Prompt Analysis",
+  "PRD",
   "Overview",
   "Features",
   "Tech Stack",
@@ -41,7 +45,7 @@ export default function OutputTabs({
   cachedApiCodes: Record<string, string>;
   setCachedApiCodes: Dispatch<SetStateAction<Record<string, string>>>;
 }) {
-  const [active, setActive] = useState<(typeof TABS)[number]>("Overview");
+  const [active, setActive] = useState<(typeof TABS)[number]>("Prompt Analysis");
 
   return (
     <div className="glass rounded-2xl overflow-hidden">
@@ -61,6 +65,8 @@ export default function OutputTabs({
         ))}
       </div>
       <div className="p-6">
+        {active === "Prompt Analysis" && <PromptAnalysisTab bp={bp} />}
+        {active === "PRD" && <PrdTab bp={bp} />}
         {active === "Overview" && <OverviewTab bp={bp} />}
         {active === "Features" && <FeaturesTab bp={bp} />}
         {active === "Tech Stack" && <TechStackTab bp={bp} />}

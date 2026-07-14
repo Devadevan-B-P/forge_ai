@@ -252,78 +252,110 @@ export default function Generator() {
 
     const productName = extractProductName(idea);
 
-    addText("PRODUCT REQUIREMENTS DOCUMENT (PRD)", 9, true, "#7c3aed");
+    addText("PRODUCT SPECIFICATION & REQUIREMENTS (PRD)", 9, true, "#7c3aed");
     y += 1.5;
-    addText(productName + " Specification", 20, true, "#1e293b");
+    addText(productName, 20, true, "#1e293b");
     y += 3;
     addText("Generated dynamically by Forge AI software architect solution.", 9.5, false, "#64748b");
     y += 6;
 
-    addHeading(1, "1. Executive Summary");
-    addBullet("Product Name: " + productName);
-    addBullet("Vision: To establish an automated, scalable, and resilient platform for: " + idea);
-    addBullet("Problem: Engineering manual system setups is prone to latency issues, design errors, and dependency mismatches.");
-    addBullet("Solution: A fully designed architecture stack featuring: " + Object.keys(blueprint.techStack).map(k => blueprint.techStack[k].join(", ")).join("; "));
-    addBullet("Target Users: End-consumers, administrative roles, and system operators.");
-    addBullet("Success Metrics: 99.9% API uptime, sub-150ms request latency, and zero data leakage.");
+    // Prompt Analysis Section
+    addHeading(1, "Prompt Analysis");
+    const pa = blueprint.promptAnalysis || {};
+    addBullet("Industry: " + (pa.industry || "N/A"));
+    addBullet("Business Type: " + (pa.businessType || "N/A"));
+    addBullet("Complexity: " + (pa.complexity || "N/A"));
+    addBullet("Expected Users: " + (pa.expectedUsers || "N/A"));
+    addBullet("Scale: " + (pa.scale || "N/A"));
+    addBullet("Budget: " + (pa.budget || "N/A"));
+    addBullet("Cloud Requirements: " + (pa.cloudRequirements || "N/A"));
+    addBullet("Compliance: " + (pa.compliance || "N/A"));
+    addBullet("Estimated Timeline: " + (pa.estimatedTimeline || "N/A"));
+    y += 4;
 
-    addHeading(1, "2. Problem Statement");
-    addText("Current legacy environments face the following challenges:", 9.5, true, "#1e293b");
-    addBullet("High initial development cost and setup times for " + productName + " applications.");
-    addBullet("Lack of unified architectural blueprints, resulting in mismatched APIs and database schemas.");
-    addBullet("High technical debt when shifting from development to cloud hosting environments.");
+    // PRD Sections
+    const prd = blueprint.prd || {};
 
-    addHeading(1, "3. User Personas & User Stories");
-    addHeading(2, "Primary Persona");
-    addText("The primary actor of the system is the consumer seeking core workflow operations.", 9.5, false);
-    addHeading(2, "Key User Stories");
-    if (blueprint.features.user?.length > 0) blueprint.features.user.slice(0, 3).forEach((f) => addBullet("As a User, I want to: " + f));
-    if (blueprint.features.admin?.length > 0) blueprint.features.admin.slice(0, 2).forEach((f) => addBullet("As an Admin, I want to: " + f));
+    // 1. Document Metadata
+    addHeading(1, "1. Document Metadata");
+    const dm = prd.documentMetadata || {};
+    addBullet("Ownership: " + (dm.ownership || "N/A"));
+    addBullet("Deployment Target: " + (dm.deploymentTarget || "N/A"));
+    addBullet("Version Status: " + (dm.versionStatus || "N/A"));
+    y += 2;
 
-    addHeading(1, "4. Product Scope");
-    addHeading(2, "In-Scope (Core Features)");
-    if (blueprint.features.user) blueprint.features.user.forEach((f) => addBullet(f));
-    if (blueprint.features.admin) blueprint.features.admin.forEach((f) => addBullet("Admin: " + f));
-    if (blueprint.features.system) blueprint.features.system.forEach((f) => addBullet("System: " + f));
-    addHeading(2, "Out of Scope");
-    addBullet("Support for unsupported databases, legacy systems integrations, or manual hosting environments.");
+    // 2. Executive Summary & Objectives
+    addHeading(1, "2. Executive Summary & Objectives");
+    addText(prd.executiveSummary || "N/A", 9.5, false, "#334155");
+    y += 2;
 
-    addHeading(1, "5. Functional Requirements");
-    if (blueprint.apis?.length > 0) {
-      blueprint.apis.slice(0, 4).forEach((api) => {
-        addHeading(3, `Endpoint: ${api.method} ${api.route}`);
-        addText(`Description: ${api.description}`, 9, false, "#475569");
-        addText(`Auth Required: ${api.authRequired ? "Yes" : "No"}`, 9, false, "#475569");
+    // 3. User Personas & Use Cases
+    addHeading(1, "3. User Personas & Use Cases");
+    if (prd.userPersonas && prd.userPersonas.length > 0) {
+      prd.userPersonas.forEach((p) => {
+        addText(p.persona, 10, true, "#0f172a");
+        addText(p.description, 9.5, false, "#475569");
+        y += 1.5;
       });
+    } else {
+      addText("N/A", 9.5, false, "#475569");
     }
+    y += 2;
 
+    // 4. Functional Requirements & Scope
+    addHeading(1, "4. Functional Requirements & Scope");
+    if (prd.functionalRequirements && prd.functionalRequirements.length > 0) {
+      prd.functionalRequirements.forEach((r) => {
+        addBullet(`[Priority: ${r.priority}] ${r.requirement}`);
+      });
+    } else {
+      addText("N/A", 9.5, false, "#475569");
+    }
+    y += 2;
+
+    // 5. User Experience & Design Links
+    addHeading(1, "5. User Experience & Design Links");
+    const ux = prd.uxDesign || {};
+    addText("Interface Overview:", 9.5, true, "#0f172a");
+    addText(ux.interfaceOverview || "N/A", 9.5, false, "#475569");
+    y += 1.5;
+    addText("Workspace Layout Description:", 9.5, true, "#0f172a");
+    addText(ux.layoutDescription || "N/A", 9.5, false, "#475569");
+    y += 2;
+
+    // 6. Non-Functional Requirements
     addHeading(1, "6. Non-Functional Requirements");
-    addHeading(2, "Performance & Scalability");
-    if (blueprint.scalability) blueprint.scalability.forEach((s) => addBullet(s));
-    addHeading(2, "Security & Reliability");
-    if (blueprint.security) blueprint.security.forEach((s) => addBullet(s));
+    if (prd.nonFunctionalRequirements && prd.nonFunctionalRequirements.length > 0) {
+      prd.nonFunctionalRequirements.forEach((r) => {
+        addBullet(`[${r.type}] ${r.requirement}`);
+      });
+    } else {
+      addText("N/A", 9.5, false, "#475569");
+    }
+    y += 2;
 
-    addHeading(1, "7. UX & Design Requirements");
-    addBullet("Responsive layout supporting desktop, tablet, and mobile breakpoints.");
-    addBullet("Futuristic visual theme featuring deep dark backgrounds and neon highlights.");
-    addBullet("Smooth transition animations and instant action response rates.");
+    // 7. Metrics & Success Criteria
+    addHeading(1, "7. Metrics & Success Criteria");
+    if (prd.metricsSuccess && prd.metricsSuccess.length > 0) {
+      prd.metricsSuccess.forEach((m) => {
+        addBullet(`${m.metric} (Target: ${m.target})`);
+      });
+    } else {
+      addText("N/A", 9.5, false, "#475569");
+    }
+    y += 2;
 
-    addHeading(1, "8. Technical Architecture");
-    addHeading(2, "Core Technologies");
-    if (blueprint.techStack) Object.keys(blueprint.techStack).forEach((layer) => addBullet(`${layer}: ${blueprint.techStack[layer].join(", ")}`));
-    addHeading(2, "Database Tables");
-    if (blueprint.database?.tables) blueprint.database.tables.forEach((table) => addBullet(`Table: ${table.name} (Columns: ${table.columns.map(c => c.name).join(", ")})`));
-
-    addHeading(1, "9. Acceptance Criteria & Testing");
-    addBullet("Definition of Done: Code compiles successfully, tests pass, and container hosts are configured.");
-    addBullet("All endpoints must validate input payloads and return standard JSON error status codes on failures.");
-    addBullet("Security checks must restrict unauthorized requests.");
-
-    addHeading(1, "10. Success Metrics & Roadmap");
-    addHeading(2, "Milestones");
-    if (blueprint.timeline) blueprint.timeline.forEach((t) => addBullet(`Phase: ${t.phase} - ${t.description} (${t.days} Days)`));
-    addHeading(2, "Future Enhancements");
-    if (blueprint.futureEnhancements) blueprint.futureEnhancements.forEach((e) => addBullet(e));
+    // 8. Risks, Dependencies, & Open Questions
+    addHeading(1, "8. Risks, Dependencies, & Open Questions");
+    if (prd.risksDependencies && prd.risksDependencies.length > 0) {
+      prd.risksDependencies.forEach((r) => {
+        addText(`Risk: ${r.risk}`, 9.5, true, "#b91c1c");
+        addText(`Mitigation: ${r.mitigation}`, 9.5, false, "#475569");
+        y += 1.5;
+      });
+    } else {
+      addText("N/A", 9.5, false, "#475569");
+    }
 
     doc.save("product_requirements_document.pdf");
   };

@@ -16,12 +16,13 @@ def get_db():
 
 async def connect_db():
     global _client
-    _client = AsyncIOMotorClient(settings.mongodb_uri, serverSelectionTimeoutMS=5000)
-    # Verify the connection is alive
     try:
+        _client = AsyncIOMotorClient(settings.mongodb_uri, serverSelectionTimeoutMS=5000)
+        # Verify the connection is alive
         await _client.admin.command("ping")
         print("[OK] Connected to MongoDB:", settings.mongodb_uri)
     except Exception as e:
+        _client = None
         print(f"[WARN] MongoDB connection failed: {e}. Auth features will be unavailable.")
 
 
