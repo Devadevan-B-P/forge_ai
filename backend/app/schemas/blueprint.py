@@ -14,6 +14,7 @@ class BlueprintConfig(BaseModel):
 class BlueprintRequest(BaseModel):
     idea: str
     config: BlueprintConfig
+    history_id: str | None = None
 
 
 class PromptAnalysis(BaseModel):

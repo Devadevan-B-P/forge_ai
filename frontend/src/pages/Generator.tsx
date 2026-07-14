@@ -7,6 +7,8 @@ import {
 import ConfigPanel from "../components/ConfigPanel";
 import OutputTabs from "../components/OutputTabs";
 import ConfirmDeleteModal from "../components/ConfirmDeleteModal";
+import AnimatedContent from "../components/AnimatedContent";
+import FadeContent from "../components/FadeContent";
 import {
   generateBlueprint,
   getErrorMessage,
@@ -227,7 +229,7 @@ export default function Generator() {
     }
   };
 
-  const handleGenerate = async () => {
+  const handleGenerate = async (isRegenerate: boolean = false) => {
     if (!idea.trim()) {
       setError("Describe your application idea first.");
       return;
@@ -235,7 +237,7 @@ export default function Generator() {
     setLoading(true);
     setError(null);
     try {
-      const res = await generateBlueprint(idea, config);
+      const res = await generateBlueprint(idea, config, isRegenerate ? activeHistoryId : null);
       setBlueprint(res.blueprint);
       setActiveHistoryId(res.id);
       setCachedSql(null);
@@ -557,21 +559,31 @@ export default function Generator() {
           <div className="flex-1 min-w-0 w-full">
 
         {/* ── Hero heading ── */}
-        <div className="mb-10">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-1.5 h-1.5 rounded-full bg-[#5FA9FF] animate-pulse" />
-            <span className="text-xs uppercase tracking-[0.2em] font-semibold" style={{ color: "#5FA9FF" }}>
-              AI Blueprint Generator
-            </span>
+        <AnimatedContent
+          distance={40}
+          direction="vertical"
+          reverse={false}
+          duration={0.8}
+          ease="power3.out"
+          initialOpacity={0}
+          scale={0.98}
+        >
+          <div className="mb-10">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-1.5 h-1.5 rounded-full bg-[#5FA9FF] animate-pulse" />
+              <span className="text-xs uppercase tracking-[0.2em] font-semibold" style={{ color: "#5FA9FF" }}>
+                AI Blueprint Generator
+              </span>
+            </div>
+            <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-white mb-2 leading-tight" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+              Describe your app.<br />
+              <span style={{ color: "#5FA9FF" }}>We'll architect it.</span>
+            </h1>
+            <p className="text-sm" style={{ color: "#9CA3AF" }}>
+              Generate a full project blueprint — API, database, cloud infra, Docker, and more.
+            </p>
           </div>
-          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-white mb-2 leading-tight" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
-            Describe your app.<br />
-            <span style={{ color: "#5FA9FF" }}>We'll architect it.</span>
-          </h1>
-          <p className="text-sm" style={{ color: "#9CA3AF" }}>
-            Generate a full project blueprint — API, database, cloud infra, Docker, and more.
-          </p>
-        </div>
+        </AnimatedContent>
 
         {/* ── Main Grid ── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start mb-8">
@@ -657,7 +669,7 @@ export default function Generator() {
             {/* Action buttons */}
             <div className="flex items-center gap-3 flex-wrap">
               <button
-                onClick={handleGenerate}
+                onClick={() => handleGenerate(false)}
                 disabled={loading}
                 className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-300 disabled:opacity-60"
                 style={{
@@ -674,7 +686,7 @@ export default function Generator() {
               {blueprint && !loading && (
                 <>
                   <button
-                    onClick={handleGenerate}
+                    onClick={() => handleGenerate(true)}
                     className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm transition-all duration-200"
                     style={{ background: "rgba(255,255,255,0.04)", border: "1px solid #22252B", color: "#9CA3AF" }}
                     onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#fff"; }}
@@ -762,48 +774,50 @@ export default function Generator() {
         {/* ── Blueprint Output ── */}
         <div ref={outputRef} className="scroll-mt-8">
           {blueprint && (
-            <div
-              className="rounded-2xl overflow-hidden"
-              style={{ border: "1px solid #22252B" }}
-            >
-              {/* Output header */}
+            <FadeContent blur={true} duration={1000} ease="power2.out" initialOpacity={0}>
               <div
-                className="px-6 py-4 flex items-center justify-between"
-                style={{ background: "#0E1014", borderBottom: "1px solid #22252B" }}
+                className="rounded-2xl overflow-hidden"
+                style={{ border: "1px solid #22252B" }}
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 rounded-full bg-[#3DD9A4]" />
-                  <p className="text-sm font-medium text-white">Blueprint Generated</p>
+                {/* Output header */}
+                <div
+                  className="px-6 py-4 flex items-center justify-between"
+                  style={{ background: "#0E1014", borderBottom: "1px solid #22252B" }}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 rounded-full bg-[#3DD9A4]" />
+                    <p className="text-sm font-medium text-white">Blueprint Generated</p>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 max-w-[60%] justify-end">
+                    {Object.values(config).map((v) => (
+                      <span
+                        key={v}
+                        className="text-[10px] px-2 py-0.5 rounded-full"
+                        style={{ background: "rgba(95,169,255,0.1)", border: "1px solid rgba(95,169,255,0.2)", color: "#7AB8FF" }}
+                      >
+                        {v}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-1.5 max-w-[60%] justify-end">
-                  {Object.values(config).map((v) => (
-                    <span
-                      key={v}
-                      className="text-[10px] px-2 py-0.5 rounded-full"
-                      style={{ background: "rgba(95,169,255,0.1)", border: "1px solid rgba(95,169,255,0.2)", color: "#7AB8FF" }}
-                    >
-                      {v}
-                    </span>
-                  ))}
+
+                {/* Idea quote */}
+                <div className="px-6 py-3" style={{ background: "#080A0D", borderBottom: "1px solid #22252B" }}>
+                  <p className="text-xs italic line-clamp-2" style={{ color: "#9CA3AF" }}>"{idea}"</p>
                 </div>
-              </div>
 
-              {/* Idea quote */}
-              <div className="px-6 py-3" style={{ background: "#080A0D", borderBottom: "1px solid #22252B" }}>
-                <p className="text-xs italic line-clamp-2" style={{ color: "#9CA3AF" }}>"{idea}"</p>
+                {/* Output tabs */}
+                <OutputTabs
+                  bp={blueprint}
+                  config={config}
+                  cachedSql={cachedSql}
+                  setCachedSql={setCachedSql}
+                  cachedApiCodes={cachedApiCodes}
+                  setCachedApiCodes={setCachedApiCodes}
+                  historyId={activeHistoryId}
+                />
               </div>
-
-              {/* Output tabs */}
-              <OutputTabs
-                bp={blueprint}
-                config={config}
-                cachedSql={cachedSql}
-                setCachedSql={setCachedSql}
-                cachedApiCodes={cachedApiCodes}
-                setCachedApiCodes={setCachedApiCodes}
-                historyId={activeHistoryId}
-              />
-            </div>
+            </FadeContent>
           )}
         </div>
 

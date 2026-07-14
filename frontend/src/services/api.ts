@@ -39,9 +39,14 @@ export interface HistoryItem {
 
 export async function generateBlueprint(
   idea: string,
-  config: BlueprintConfig
+  config: BlueprintConfig,
+  historyId?: string | null
 ): Promise<{ id: string; blueprint: Blueprint }> {
-  const { data } = await client.post<{ id: string; blueprint: Blueprint }>("/blueprint/generate", { idea, config });
+  const { data } = await client.post<{ id: string; blueprint: Blueprint }>("/blueprint/generate", {
+    idea,
+    config,
+    history_id: historyId,
+  });
   return data;
 }
 
