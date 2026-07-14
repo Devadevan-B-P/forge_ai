@@ -11,6 +11,8 @@ import {
   SecurityTab,
   PromptAnalysisTab,
   PrdTab,
+  AiRecommendationsTab,
+  MermaidTab,
 } from "./tabs/SimpleTabs";
 import DatabaseTab from "./tabs/DatabaseTab";
 import ApiTab from "./tabs/ApiTab";
@@ -28,6 +30,8 @@ const TABS = [
   "Docker",
   "Timeline",
   "Security",
+  "AI Recommendations",
+  "Mermaid Diagrams",
 ] as const;
 
 export default function OutputTabs({
@@ -37,6 +41,7 @@ export default function OutputTabs({
   setCachedSql,
   cachedApiCodes,
   setCachedApiCodes,
+  historyId,
 }: {
   bp: Blueprint;
   config: BlueprintConfig;
@@ -44,6 +49,7 @@ export default function OutputTabs({
   setCachedSql: (sql: string | null) => void;
   cachedApiCodes: Record<string, string>;
   setCachedApiCodes: Dispatch<SetStateAction<Record<string, string>>>;
+  historyId?: string | null;
 }) {
   const [active, setActive] = useState<(typeof TABS)[number]>("Prompt Analysis");
 
@@ -76,6 +82,7 @@ export default function OutputTabs({
             dialect={config.database}
             cachedSql={cachedSql}
             setCachedSql={setCachedSql}
+            historyId={historyId}
           />
         )}
         {active === "API" && (
@@ -84,6 +91,7 @@ export default function OutputTabs({
             framework={config.backend}
             cachedApiCodes={cachedApiCodes}
             setCachedApiCodes={setCachedApiCodes}
+            historyId={historyId}
           />
         )}
         {active === "Folder" && <FolderTab bp={bp} />}
@@ -91,6 +99,8 @@ export default function OutputTabs({
         {active === "Docker" && <DockerTab bp={bp} />}
         {active === "Timeline" && <TimelineTab bp={bp} />}
         {active === "Security" && <SecurityTab bp={bp} />}
+        {active === "AI Recommendations" && <AiRecommendationsTab bp={bp} />}
+        {active === "Mermaid Diagrams" && <MermaidTab bp={bp} />}
       </div>
     </div>
   );

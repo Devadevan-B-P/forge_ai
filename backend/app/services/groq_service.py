@@ -2,7 +2,6 @@ import json
 from groq import Groq
 
 from app.core.config import settings
-from app.prompts.system_prompt import BLUEPRINT_SYSTEM_PROMPT, build_user_prompt
 
 _client = None
 
@@ -19,23 +18,6 @@ def _get_client():
 
 
 REQUEST_TIMEOUT_SECONDS = 60
-
-
-def generate_blueprint(idea: str, config: dict) -> dict:
-    client = _get_client()
-    messages = [
-        {"role": "system", "content": BLUEPRINT_SYSTEM_PROMPT},
-        {"role": "user", "content": build_user_prompt(idea, config)},
-    ]
-    response = client.chat.completions.create(
-        model=settings.groq_model,
-        messages=messages,
-        temperature=0.4,
-        response_format={"type": "json_object"},
-        max_tokens=4096,
-        timeout=REQUEST_TIMEOUT_SECONDS,
-    )
-    return json.loads(response.choices[0].message.content)
 
 
 def generate_sql(database: dict, dialect: str) -> str:
@@ -81,6 +63,12 @@ Endpoint spec:
 
 def _strip_code_fence(text: str) -> str:
     t = text.strip()
+    if "<think>" in t:
+        parts = t.split("</think>", 1)
+        if len(parts) > 1:
+            t = parts[1].strip()
+        else:
+            t = t.replace("<think>", "").strip()
     if t.startswith("```"):
         lines = t.split("\n")
         lines = lines[1:]

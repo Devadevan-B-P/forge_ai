@@ -12,6 +12,8 @@ export interface Column {
   type: string;
   primaryKey: boolean;
   foreignKey: string | null;
+  unique: boolean;
+  nullable: boolean;
   notes?: string;
 }
 
@@ -25,8 +27,12 @@ export interface ApiEndpoint {
   route: string;
   description: string;
   authRequired: boolean;
+  validation: string;
+  headers: Array<{ name: string; description: string }>;
+  statusCodes: Array<{ code: number; description: string }>;
   sampleRequest: string;
   sampleResponse: string;
+  errors: Array<{ code: number; message: string }>;
 }
 
 export interface TimelinePhase {
@@ -47,6 +53,14 @@ export interface PromptAnalysis {
   estimatedTimeline: string;
 }
 
+export interface Decision {
+  component: string;
+  userRequirement: string;
+  recommendation: string;
+  alternatives: string[];
+  reason: string;
+}
+
 export interface PrdStructure {
   documentMetadata: {
     ownership: string;
@@ -54,19 +68,50 @@ export interface PrdStructure {
     versionStatus: string;
   };
   executiveSummary: string;
-  userPersonas: Array<{ persona: string; description: string }>;
-  functionalRequirements: Array<{ requirement: string; priority: string }>;
+  userStories: Array<{ persona: string; story: string }>;
+  businessRules: Array<{ rule: string }>;
+  acceptanceCriteria: Array<{ feature: string; criteria: string[] }>;
   uxDesign: {
     interfaceOverview: string;
     layoutDescription: string;
   };
-  nonFunctionalRequirements: Array<{ requirement: string; type: string }>;
-  metricsSuccess: Array<{ metric: string; target: string }>;
-  risksDependencies: Array<{ risk: string; mitigation: string }>;
+  businessFlow: string[];
+  systemFlow: string[];
+}
+
+export interface Monitoring {
+  tracing: string;
+  metrics: string[];
+  dashboards: string[];
+  healthChecks: string[];
+}
+
+export interface EstimatedCost {
+  aws: string;
+  development: string;
+  duration: string;
+}
+
+export interface AiRecommendations {
+  alternativeTechStack: string[];
+  potentialBottlenecks: string[];
+  scalingAdvice: string[];
+  securityAdvice: string[];
+  estimatedComplexity: string;
+  architectureScore: string;
+}
+
+export interface Mermaid {
+  erDiagram: string;
+  architectureDiagram: string;
+  flowDiagram: string;
+  sequenceDiagram: string;
+  deploymentDiagram: string;
 }
 
 export interface Blueprint {
   promptAnalysis: PromptAnalysis;
+  decisions: Decision[];
   prd: PrdStructure;
   overview: string;
   features: { user: string[]; admin: string[]; system: string[] };
@@ -89,4 +134,8 @@ export interface Blueprint {
   security: string[];
   scalability: string[];
   futureEnhancements: string[];
+  monitoring: Monitoring;
+  estimatedCost: EstimatedCost;
+  aiRecommendations: AiRecommendations;
+  mermaid: Mermaid;
 }

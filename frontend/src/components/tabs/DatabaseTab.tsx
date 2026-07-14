@@ -9,11 +9,13 @@ export default function DatabaseTab({
   dialect,
   cachedSql,
   setCachedSql,
+  historyId,
 }: {
   bp: Blueprint;
   dialect: string;
   cachedSql: string | null;
   setCachedSql: (sql: string | null) => void;
+  historyId?: string | null;
 }) {
   const [loading, setLoading] = useState(false);
   const [showCode, setShowCode] = useState(false);
@@ -27,7 +29,7 @@ export default function DatabaseTab({
     setLoading(true);
     setError(null);
     try {
-      const res = await generateSql(bp.database, dialect);
+      const res = await generateSql(bp.database, dialect, historyId);
       setCachedSql(res.code);
       setShowCode(true);
     } catch (e: any) {
@@ -64,6 +66,8 @@ export default function DatabaseTab({
                   <th className="pb-1">Column</th>
                   <th className="pb-1">Type</th>
                   <th className="pb-1">Key</th>
+                  <th className="pb-1">Unique</th>
+                  <th className="pb-1">Nullable</th>
                   <th className="pb-1">Notes</th>
                 </tr>
               </thead>
@@ -75,6 +79,8 @@ export default function DatabaseTab({
                     <td className="py-1.5 text-slate-400">
                       {c.primaryKey ? "PK" : c.foreignKey ? `FK → ${c.foreignKey}` : ""}
                     </td>
+                    <td className="py-1.5 text-slate-400">{c.unique ? "Yes" : "No"}</td>
+                    <td className="py-1.5 text-slate-400">{c.nullable ? "Yes" : "No"}</td>
                     <td className="py-1.5 text-slate-500">{c.notes}</td>
                   </tr>
                 ))}

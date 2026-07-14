@@ -16,11 +16,13 @@ export default function ApiTab({
   framework,
   cachedApiCodes,
   setCachedApiCodes,
+  historyId,
 }: {
   bp: Blueprint;
   framework: string;
   cachedApiCodes: Record<string, string>;
   setCachedApiCodes: Dispatch<SetStateAction<Record<string, string>>>;
+  historyId?: string | null;
 }) {
   const [loadingIdx, setLoadingIdx] = useState<number | null>(null);
   const [code, setCode] = useState<{ title: string; body: string } | null>(null);
@@ -36,7 +38,7 @@ export default function ApiTab({
     setLoadingIdx(idx);
     setError(null);
     try {
-      const res = await generateEndpointCode(endpoint, framework);
+      const res = await generateEndpointCode(endpoint, framework, historyId, cacheKey);
       setCachedApiCodes((prev) => ({ ...prev, [cacheKey]: res.code }));
       setCode({ title: `${endpoint.method} ${endpoint.route}`, body: res.code });
     } catch (e: any) {
@@ -79,20 +81,55 @@ export default function ApiTab({
                 Generate {framework} Codes
               </button>
             </div>
-            <div className="mt-3 grid sm:grid-cols-2 gap-3 text-xs">
+            <div className="mt-3 grid sm:grid-cols-2 gap-4 text-xs">
               <div>
-                <p className="text-slate-500 mb-1">
-                  Auth: {a.authRequired ? "Required" : "None"}
-                </p>
-                <p className="text-slate-500 mb-1">Sample Request</p>
-                <pre className="bg-panel rounded-lg p-2 overflow-x-auto text-slate-300">
+                <div className="mb-2">
+                  <span className="text-slate-500">Auth:</span> <span className={a.authRequired ? "text-accent2" : "text-slate-400"}>{a.authRequired ? "Required" : "None"}</span>
+                </div>
+                {a.validation && (
+                  <div className="mb-2">
+                    <span className="text-slate-500 block mb-0.5">Validation:</span>
+                    <span className="text-slate-300">{a.validation}</span>
+                  </div>
+                )}
+                {a.headers && a.headers.length > 0 && (
+                  <div className="mb-2">
+                    <span className="text-slate-500 block mb-0.5">Headers:</span>
+                    <ul className="list-disc list-inside text-[11px] text-slate-400 space-y-0.5">
+                      {a.headers.map((h, idx) => (
+                        <li key={idx}><span className="text-slate-300 font-mono">{h.name}</span>: {h.description}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {a.statusCodes && a.statusCodes.length > 0 && (
+                  <div className="mb-2">
+                    <span className="text-slate-500 block mb-0.5">Success Codes:</span>
+                    <div className="flex gap-1.5 flex-wrap">
+                      {a.statusCodes.map((sc, idx) => (
+                        <span key={idx} className="bg-[#3DD9A4]/10 text-[#3DD9A4] border border-[#3DD9A4]/20 px-1.5 py-0.5 rounded text-[10px]"><b className="font-semibold">{sc.code}</b>: {sc.description}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {a.errors && a.errors.length > 0 && (
+                  <div className="mb-2">
+                    <span className="text-slate-500 block mb-0.5">Errors:</span>
+                    <div className="flex gap-1.5 flex-wrap">
+                      {a.errors.map((err, idx) => (
+                        <span key={idx} className="bg-red-500/10 text-red-400 border border-red-500/20 px-1.5 py-0.5 rounded text-[10px]"><b className="font-semibold">{err.code}</b>: {err.message}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <p className="text-slate-500 mb-1 mt-2">Sample Request</p>
+                <pre className="bg-panel rounded-lg p-2 overflow-x-auto text-slate-300 font-mono">
                   {a.sampleRequest}
                 </pre>
               </div>
               <div>
-                <p className="text-slate-500 mb-1 sm:invisible">.</p>
                 <p className="text-slate-500 mb-1">Sample Response</p>
-                <pre className="bg-panel rounded-lg p-2 overflow-x-auto text-slate-300">
+                <pre className="bg-panel rounded-lg p-2 overflow-x-auto text-slate-300 font-mono">
                   {a.sampleResponse}
                 </pre>
               </div>

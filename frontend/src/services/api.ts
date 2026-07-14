@@ -50,7 +50,17 @@ export async function fetchHistory(): Promise<HistoryItem[]> {
   return data;
 }
 
-export async function fetchHistoryDetail(id: string): Promise<{ _id: string; idea: string; config: BlueprintConfig; blueprint: Blueprint; created_at: string }> {
+export async function fetchHistoryDetail(
+  id: string
+): Promise<{
+  _id: string;
+  idea: string;
+  config: BlueprintConfig;
+  blueprint: Blueprint;
+  created_at: string;
+  cachedSql?: string | null;
+  cachedApiCodes?: Record<string, string>;
+}> {
   const { data } = await client.get<any>(`/history/${id}`);
   return data;
 }
@@ -60,18 +70,23 @@ export async function deleteHistory(id: string): Promise<{ success: boolean }> {
   return data;
 }
 
-export async function generateSql(database: unknown, dialect: string) {
+export async function generateSql(database: unknown, dialect: string, historyId?: string | null) {
   const { data } = await client.post<{ code: string; language: string }>(
     "/generate/sql",
-    { database, dialect }
+    { database, dialect, history_id: historyId }
   );
   return data;
 }
 
-export async function generateEndpointCode(endpoint: unknown, framework: string) {
+export async function generateEndpointCode(
+  endpoint: unknown,
+  framework: string,
+  historyId?: string | null,
+  endpointKey?: string | null
+) {
   const { data } = await client.post<{ code: string; language: string }>(
     "/generate/endpoint",
-    { endpoint, framework }
+    { endpoint, framework, history_id: historyId, endpoint_key: endpointKey }
   );
   return data;
 }

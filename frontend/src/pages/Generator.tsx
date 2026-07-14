@@ -165,8 +165,8 @@ export default function Generator() {
       setIdea(data.idea);
       setConfig(data.config);
       setBlueprint(data.blueprint);
-      setCachedSql(null);
-      setCachedApiCodes({});
+      setCachedSql(data.cachedSql || null);
+      setCachedApiCodes(data.cachedApiCodes || {});
       setTimeout(() => outputRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
     } catch (err: any) {
       setError(getErrorMessage(err, "Failed to load project details."));
@@ -186,6 +186,9 @@ export default function Generator() {
 
   const handleDeleteHistory = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
+    const confirmDelete = window.confirm("Are you sure you want to permanently delete this project blueprint?");
+    if (!confirmDelete) return;
+
     try {
       await deleteHistory(id);
       setHistory((prev) => prev.filter((item) => item.id !== id));
@@ -357,12 +360,12 @@ export default function Generator() {
     addText(prd.executiveSummary || "N/A", 9.5, false, "#334155");
     y += 2;
 
-    // 3. User Personas & Use Cases
-    addHeading(1, "3. User Personas & Use Cases");
-    if (prd.userPersonas && prd.userPersonas.length > 0) {
-      prd.userPersonas.forEach((p) => {
-        addText(p.persona, 10, true, "#0f172a");
-        addText(p.description, 9.5, false, "#475569");
+    // 3. User Stories
+    addHeading(1, "3. User Stories");
+    if (prd.userStories && prd.userStories.length > 0) {
+      prd.userStories.forEach((s) => {
+        addText(s.persona, 10, true, "#0f172a");
+        addText(s.story, 9.5, false, "#475569");
         y += 1.5;
       });
     } else {
@@ -370,19 +373,34 @@ export default function Generator() {
     }
     y += 2;
 
-    // 4. Functional Requirements & Scope
-    addHeading(1, "4. Functional Requirements & Scope");
-    if (prd.functionalRequirements && prd.functionalRequirements.length > 0) {
-      prd.functionalRequirements.forEach((r) => {
-        addBullet(`[Priority: ${r.priority}] ${r.requirement}`);
+    // 4. Business Rules
+    addHeading(1, "4. Business Rules");
+    if (prd.businessRules && prd.businessRules.length > 0) {
+      prd.businessRules.forEach((r) => {
+        addBullet(r.rule);
       });
     } else {
       addText("N/A", 9.5, false, "#475569");
     }
     y += 2;
 
-    // 5. User Experience & Design Links
-    addHeading(1, "5. User Experience & Design Links");
+    // 5. Acceptance Criteria
+    addHeading(1, "5. Acceptance Criteria");
+    if (prd.acceptanceCriteria && prd.acceptanceCriteria.length > 0) {
+      prd.acceptanceCriteria.forEach((ac) => {
+        addText(ac.feature, 10, true, "#0f172a");
+        ac.criteria?.forEach((crit) => {
+          addBullet(crit);
+        });
+        y += 1;
+      });
+    } else {
+      addText("N/A", 9.5, false, "#475569");
+    }
+    y += 2;
+
+    // 6. User Experience & Design Links
+    addHeading(1, "6. User Experience & Design Links");
     const ux = prd.uxDesign || {};
     addText("Interface Overview:", 9.5, true, "#0f172a");
     addText(ux.interfaceOverview || "N/A", 9.5, false, "#475569");
@@ -391,39 +409,27 @@ export default function Generator() {
     addText(ux.layoutDescription || "N/A", 9.5, false, "#475569");
     y += 2;
 
-    // 6. Non-Functional Requirements
-    addHeading(1, "6. Non-Functional Requirements");
-    if (prd.nonFunctionalRequirements && prd.nonFunctionalRequirements.length > 0) {
-      prd.nonFunctionalRequirements.forEach((r) => {
-        addBullet(`[${r.type}] ${r.requirement}`);
+    // 7. Business Flow
+    addHeading(1, "7. Business Flow");
+    if (prd.businessFlow && prd.businessFlow.length > 0) {
+      prd.businessFlow.forEach((f) => {
+        addBullet(f);
       });
     } else {
       addText("N/A", 9.5, false, "#475569");
     }
     y += 2;
 
-    // 7. Metrics & Success Criteria
-    addHeading(1, "7. Metrics & Success Criteria");
-    if (prd.metricsSuccess && prd.metricsSuccess.length > 0) {
-      prd.metricsSuccess.forEach((m) => {
-        addBullet(`${m.metric} (Target: ${m.target})`);
+    // 8. System Flow
+    addHeading(1, "8. System Flow");
+    if (prd.systemFlow && prd.systemFlow.length > 0) {
+      prd.systemFlow.forEach((f) => {
+        addBullet(f);
       });
     } else {
       addText("N/A", 9.5, false, "#475569");
     }
     y += 2;
-
-    // 8. Risks, Dependencies, & Open Questions
-    addHeading(1, "8. Risks, Dependencies, & Open Questions");
-    if (prd.risksDependencies && prd.risksDependencies.length > 0) {
-      prd.risksDependencies.forEach((r) => {
-        addText(`Risk: ${r.risk}`, 9.5, true, "#b91c1c");
-        addText(`Mitigation: ${r.mitigation}`, 9.5, false, "#475569");
-        y += 1.5;
-      });
-    } else {
-      addText("N/A", 9.5, false, "#475569");
-    }
 
     doc.save("product_requirements_document.pdf");
   };
@@ -788,6 +794,7 @@ export default function Generator() {
                 setCachedSql={setCachedSql}
                 cachedApiCodes={cachedApiCodes}
                 setCachedApiCodes={setCachedApiCodes}
+                historyId={activeHistoryId}
               />
             </div>
           )}
