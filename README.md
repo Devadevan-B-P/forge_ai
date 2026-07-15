@@ -86,7 +86,7 @@ Blueprint generation is iterative. Generate an initial blueprint, review the res
 
 ## Stack & Setup
 
-- **Backend**: FastAPI + Groq SDK (`qwen/qwen3-32b`) + Motor (MongoDB driver)
+- **Backend**: FastAPI + Groq SDK (3-Model Waterfall: Qwen3 32B → GPT-OSS 120B → Llama 3.3 70B) + Motor (MongoDB driver)
 - **Frontend**: React + Vite + TypeScript + TailwindCSS + Framer Motion (animations) + Three.js (about page scroll loop)
 
 ### 1. Backend Setup
@@ -106,18 +106,18 @@ uvicorn main:app --reload --port 8000
 #### Configuring Backend `.env`
 
 The backend expects the following environment variables:
-- `GROQ_API_KEY`: Get your key from Groq Console (e.g. `gsk_...`).
-- `GROQ_MODEL`: Set to the model to use (default: `qwen/qwen3-32b`).
+- `GROQ_API_KEY`: Get your key from Groq Console (e.g. `gsk_...`). A single key is used for all models in the waterfall.
 - `MONGODB_URI`: Connection string for MongoDB (Atlas recommended).
 - `MONGODB_DB`: MongoDB database name (default: `forge_ai`).
 - `JWT_SECRET_KEY`: A secure random secret key. Generate one with:
   ```bash
   python -c "import secrets; print(secrets.token_hex(32))"
   ```
+- `REDIS_URL`: (Optional) Redis connection URL (e.g., `redis://localhost:6379`). Used for multi-worker rate limiting and concurrent model fallback tracking.
 
 #### Running Automated Tests
 
-Run the backend test suite via `pytest` to verify security, generator IDOR blocks, and JWT validation:
+Run the backend test suite via `pytest` to verify security, generator IDOR blocks, JWT validation, and the model waterfall fallback sequence:
 ```bash
 python -m pytest
 ```
@@ -173,7 +173,11 @@ forge-ai/
       routers/blueprint.py     POST /api/blueprint/generate
       routers/generators.py    POST /api/generate/sql, /api/generate/endpoint
       routers/history.py       POST /api/history routes
-    tests/                     automated pytest suite (auth, history, generators)
+    tests/                     automated pytest suite:
+      test_auth.py             JWT session and auth endpoint tests
+      test_generators.py       security and IDOR checking for code generation
+      test_history.py          history project CRUD tests
+      test_waterfall.py        model waterfall, rate limits, and proactive token skip tests
   frontend/
     src/
       pages/Landing.tsx        landing page with "Start Building" CTA
@@ -195,6 +199,11 @@ forge-ai/
 
 ## Notes on the AI Layer & System Design
 
+- **Optimized 3-Model Waterfall Fallback**: The core pipeline cascades through a 3-model waterfall sequence (`Qwen3 32B` → `GPT-OSS 120B` → `Llama 3.3 70B`) served via Groq to guarantee high availability and bypass API rate-limiting under load.
+- **Proactive Token Skipping & Capping**: Calculates estimated token requests (`input_tokens + max_output_tokens`) up front. If the estimate exceeds a model's total TPM limit, the pipeline dynamically scales down the output tokens to fit inside the budget, or proactively skips the model entirely if the remaining output space is too small (`< 2000` tokens).
+- **Synchronized Cooldown Trackers**: Integrates with Redis and local memory states to block rate-limited or capacity-exhausted models for 30 seconds, forcing concurrent/subsequent requests to bypass them proactively without making wasted round trips.
+- **Stale Chunks SSE Flushing**: Discards partial chunk data on both the backend and frontend when a model switch occurs, ensuring that the final output doesn't contain a mix of content from multiple models.
+- **JSON Repair Fallback**: Integrates a client-side and server-side text-based JSON repair parser to salvage truncated JSON strings (e.g., if a model hits token limits mid-generation) by closing open strings and structures.
 - **Groq JSON Mode**: The blueprint generation utilizes Groq JSON mode (`response_format={"type": "json_object"}`) to guarantee structured, easily parseable JSON outputs matching the backend Pydantic expectations.
 - **Asynchronous LLM Calls**: The Database SQL and API Code snippet generators run inside small, async prompts, focusing context windows only on the relevant segments to maximize generation speed and minimize token costs.
 - **Strict JSON Prompt Guidelines**: The system prompt enforces strict JSON formatting rules (e.g. banning escaped single quotes `\'` in string enums) to prevent Groq API validator schema rejections.
