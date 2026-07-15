@@ -180,8 +180,9 @@ export default function About() {
     // 2. Setup scroll tracking and smooth loop
     let targetFrame = 0;
     let currentFrame = 0;
-    const lerpFactor = 0.08;
+    const lerpFactor = 0.15;
     let animationFrameId: number;
+    let lastDrawnFrameIndex = -1;
 
     const handleScroll = () => {
       const scrollTop = window.scrollY || document.documentElement.scrollTop;
@@ -195,12 +196,15 @@ export default function About() {
       currentFrame += (targetFrame - currentFrame) * lerpFactor;
       
       const frameIndex = Math.round(currentFrame);
-      const img = imagesRef.current[frameIndex];
-      const canvas = canvasRef.current;
-      if (canvas && img && img.complete) {
-        const ctx = canvas.getContext("2d");
-        if (ctx) {
-          drawImageCover(ctx, img);
+      if (frameIndex !== lastDrawnFrameIndex) {
+        const img = imagesRef.current[frameIndex];
+        const canvas = canvasRef.current;
+        if (canvas && img && img.complete) {
+          const ctx = canvas.getContext("2d");
+          if (ctx) {
+            drawImageCover(ctx, img);
+            lastDrawnFrameIndex = frameIndex;
+          }
         }
       }
 
@@ -214,12 +218,16 @@ export default function About() {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
 
+      // Force redraw on resize
+      lastDrawnFrameIndex = -1;
+
       const frameIndex = Math.round(currentFrame);
       const img = imagesRef.current[frameIndex];
       if (img && img.complete) {
         const ctx = canvas.getContext("2d");
         if (ctx) {
           drawImageCover(ctx, img);
+          lastDrawnFrameIndex = frameIndex;
         }
       }
     };

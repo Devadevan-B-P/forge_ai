@@ -34,12 +34,19 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const passwordStrength = PASSWORD_RULES.filter((r) => r.test(password)).length;
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (mode === "signup" && !acceptedTerms) {
+      setError("You must accept the Terms and Conditions to sign up.");
+      return;
+    }
+
     setLoading(true);
     try {
       if (mode === "login") {
@@ -59,6 +66,7 @@ export default function Auth() {
     setMode((m) => (m === "login" ? "signup" : "login"));
     setError(null);
     setPassword("");
+    setAcceptedTerms(false);
   };
 
   return (
@@ -270,6 +278,32 @@ export default function Auth() {
                         </span>
                       ))}
                     </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Terms & Conditions Checkbox — signup only */}
+              <AnimatePresence initial={false}>
+                {mode === "signup" && (
+                  <motion.div
+                    key="terms-checkbox"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.25, ease: "easeInOut" }}
+                    className="overflow-hidden"
+                  >
+                    <label className="flex gap-2.5 items-start cursor-pointer group mt-1 py-1">
+                      <input
+                        type="checkbox"
+                        checked={acceptedTerms}
+                        onChange={(e) => setAcceptedTerms(e.target.checked)}
+                        className="mt-0.5 w-3.5 h-3.5 rounded border border-[#22252B] bg-[#050505]/40 text-[#5FA9FF] focus:ring-0 focus:ring-offset-0 transition-colors cursor-pointer"
+                      />
+                      <span className="text-[11px] text-[#9CA3AF] leading-relaxed select-none group-hover:text-white transition-colors">
+                        I agree to the <span className="text-[#5FA9FF] font-medium hover:underline cursor-pointer" onClick={(e) => { e.preventDefault(); e.stopPropagation(); alert("Terms and Conditions:\n\n1. By signing up, you agree that you are creating blueprints for design and educational purposes.\n2. All generation runs are subject to fair use limits.\n3. You are responsible for ensuring that any blueprints generated do not infringe on other intellectual property rights.\n4. Forge AI provides recommendations 'as is' without warranties."); }}>Terms and Conditions</span>
+                      </span>
+                    </label>
                   </motion.div>
                 )}
               </AnimatePresence>
