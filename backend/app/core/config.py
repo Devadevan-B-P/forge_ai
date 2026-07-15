@@ -1,9 +1,21 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from typing import List
+
+
+# ─── Model waterfall ─────────────────────────────────────────────────────────
+# Tried in order; if a model hits a rate-limit the next one is used.
+# Each tuple: (model_id, human_readable_name)
+GROQ_MODEL_WATERFALL: List[tuple] = [
+    ("qwen/qwen3-32b",          "Qwen3 32B"),
+    ("openai/gpt-4o-mini",      "GPT-4o Mini"),
+    ("llama-3.3-70b-versatile", "Llama 3.3 70B"),
+]
 
 
 class Settings(BaseSettings):
     groq_api_key: str = ""
-    groq_model: str = "qwen/qwen3-32b"
+    # Kept for the legacy /generate endpoint; streaming uses GROQ_MODEL_WATERFALL
+    groq_model: str = GROQ_MODEL_WATERFALL[0][0]
     frontend_origin: str = "http://localhost:5173"
     testing: bool = False
 

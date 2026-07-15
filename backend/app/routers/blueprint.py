@@ -78,11 +78,15 @@ async def generate_stream(req: BlueprintRequest, current_user: dict = Depends(ge
     async def sse_generator():
         accumulated_text = ""
         try:
-            async for chunk in run_generator_pipeline_stream(req.idea, req.config.model_dump()):
-                accumulated_text += chunk
-                chunk_payload = json.dumps({'type': 'chunk', 'text': chunk})
-                yield f"data: {chunk_payload}\n\n"
-            
+            async for event_type, payload in run_generator_pipeline_stream(req.idea, req.config.model_dump()):
+                if event_type == "model":
+                    # Tell the browser which model is currently active
+                    yield f"data: {json.dumps({'type': 'model', 'name': payload})}\n\n"
+                elif event_type == "chunk":
+                    accumulated_text += payload
+                    chunk_payload = json.dumps({'type': 'chunk', 'text': payload})
+                    yield f"data: {chunk_payload}\n\n"
+
             # Parse completed stream to JSON
             try:
                 result = json.loads(accumulated_text.strip())
@@ -131,3 +135,4 @@ async def generate_stream(req: BlueprintRequest, current_user: dict = Depends(ge
             yield f"data: {err_msg_payload}\n\n"
 
     return StreamingResponse(sse_generator(), media_type="text/event-stream")
+

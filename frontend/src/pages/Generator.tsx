@@ -202,6 +202,8 @@ export default function Generator() {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [activeHistoryId, setActiveHistoryId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  /** Which AI model is currently being used for streaming generation */
+  const [activeModel, setActiveModel] = useState<string | null>(null);
 
   const typingTimeoutRef = useRef<number | null>(null);
   const outputRef = useRef<HTMLDivElement>(null);
@@ -385,6 +387,7 @@ export default function Generator() {
     setBlueprint(null);
     setCachedSql(null);
     setCachedApiCodes({});
+    setActiveModel(null);
 
     // Scroll to loader section immediately to show the loading screen/progress
     setTimeout(() => outputRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
@@ -432,22 +435,29 @@ export default function Generator() {
           if (!trimmed.startsWith("data: ")) continue;
 
           const jsonStr = trimmed.slice(6);
+          let parsed: any;
           try {
-            const parsed = JSON.parse(jsonStr);
-            if (parsed.type === "chunk") {
-              accumulatedText += parsed.text;
-              const partialBp = parsePartialJson(accumulatedText);
-              if (partialBp) {
-                setBlueprint(partialBp as any);
-              }
-            } else if (parsed.type === "done") {
-              setBlueprint(parsed.blueprint);
-              setActiveHistoryId(parsed.id);
-            } else if (parsed.type === "error") {
-              throw new Error(parsed.message);
+            parsed = JSON.parse(jsonStr);
+          } catch {
+            // Ignore malformed SSE chunk lines (e.g. keep-alive pings)
+            continue;
+          }
+
+          if (parsed.type === "model") {
+            // Backend is switching / confirming which model is active
+            setActiveModel(parsed.name);
+          } else if (parsed.type === "chunk") {
+            accumulatedText += parsed.text;
+            const partialBp = parsePartialJson(accumulatedText);
+            if (partialBp) {
+              setBlueprint(partialBp as any);
             }
-          } catch (e) {
-            // Ignore minor chunk decoding errors
+          } else if (parsed.type === "done") {
+            setBlueprint(parsed.blueprint);
+            setActiveHistoryId(parsed.id);
+          } else if (parsed.type === "error") {
+            // Server explicitly reported an error — surface it to the user
+            throw new Error(parsed.message);
           }
         }
       }
@@ -460,6 +470,7 @@ export default function Generator() {
         console.log("Generation request aborted.");
         return;
       }
+      console.error("[Forge AI] Generation error:", e);
       setError(getFriendlyErrorMessage(e.message || ""));
     } finally {
       abortControllerRef.current = null;
@@ -1108,9 +1119,25 @@ export default function Generator() {
                     <p className="text-[10px] text-slate-400">Please wait while the AI models design your solution</p>
                   </div>
                 </div>
-                <span className="text-[10px] bg-[#5FA9FF]/10 text-[#5FA9FF] border border-[#5FA9FF]/20 px-2 py-0.5 rounded-full font-mono font-medium animate-pulse">
-                  {Math.round(((stepIndex + 1) / GENERATION_STEPS.length) * 100)}%
-                </span>
+                <div className="flex items-center gap-2">
+                  {activeModel && (
+                    <span
+                      key={activeModel}
+                      className="text-[10px] px-2 py-0.5 rounded-full font-mono font-medium border"
+                      style={{
+                        background: "rgba(61,217,164,0.08)",
+                        color: "#3DD9A4",
+                        border: "1px solid rgba(61,217,164,0.25)",
+                        animation: "modelFadeIn 0.4s ease",
+                      }}
+                    >
+                      ⚡ {activeModel}
+                    </span>
+                  )}
+                  <span className="text-[10px] bg-[#5FA9FF]/10 text-[#5FA9FF] border border-[#5FA9FF]/20 px-2 py-0.5 rounded-full font-mono font-medium animate-pulse">
+                    {Math.round(((stepIndex + 1) / GENERATION_STEPS.length) * 100)}%
+                  </span>
+                </div>
               </div>
 
               {/* Progress bar */}

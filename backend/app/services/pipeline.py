@@ -1,8 +1,10 @@
 import json
 import asyncio
+import groq as groq_sdk
 from groq import AsyncGroq
+from typing import AsyncGenerator
 
-from app.core.config import settings
+from app.core.config import settings, GROQ_MODEL_WATERFALL
 from app.prompts.system_prompt import BLUEPRINT_SYSTEM_PROMPT, build_user_prompt
 
 _async_client: AsyncGroq | None = None
@@ -257,78 +259,94 @@ Return ONLY the raw JSON object. No markdown, no preambles.
 """
 
 
-async def _call_groq_async(prompt: str, system_role: str) -> dict:
+def _is_rate_limit_error(exc: Exception) -> bool:
+    """Return True for any rate-limit / quota-exceeded error from Groq."""
+    if isinstance(exc, groq_sdk.RateLimitError):
+        return True
+    msg = str(exc).lower()
+    return "rate limit" in msg or "429" in msg or "too many requests" in msg or "quota" in msg
+
+
+async def _call_model_async(prompt: str, system_role: str, model_id: str) -> dict:
+    """Single non-streaming call to a specific Groq model."""
     client = _get_async_client()
     messages = [
         {"role": "system", "content": system_role},
-        {"role": "user", "content": prompt}
+        {"role": "user", "content": prompt},
     ]
     response = await client.chat.completions.create(
-        model=settings.groq_model,
-        messages=messages,
-        temperature=0.3,
-        response_format={"type": "json_object"},
-        max_tokens=4096,
-        timeout=60
-    )
-    return json.loads(response.choices[0].message.content.strip())
-
-
-async def _call_groq_async_with_retry(prompt: str, system_role: str, max_retries=5) -> dict:
-    import groq
-    retry_delay = 5
-    for attempt in range(max_retries):
-        try:
-            return await _call_groq_async(prompt, system_role)
-        except groq.RateLimitError as e:
-            if attempt == max_retries - 1:
-                raise
-            wait_time = retry_delay
-            try:
-                if hasattr(e, 'response') and e.response is not None:
-                    headers = e.response.headers
-                    if 'retry-after' in headers:
-                        wait_time = max(wait_time, float(headers['retry-after']) + 0.5)
-            except Exception:
-                pass
-            print(f"[WARN] Groq rate limit hit (429). Retrying in {wait_time}s... (Attempt {attempt + 1}/{max_retries})")
-            await asyncio.sleep(wait_time)
-            retry_delay *= 1.5
-        except Exception as e:
-            msg = str(e).lower()
-            if "rate limit" in msg or "429" in msg or "too many requests" in msg:
-                if attempt == max_retries - 1:
-                    raise
-                print(f"[WARN] Suspected rate limit. Retrying in {retry_delay}s... (Attempt {attempt + 1}/{max_retries})")
-                await asyncio.sleep(retry_delay)
-                retry_delay *= 1.5
-            else:
-                raise
-
-
-async def run_generator_pipeline(idea: str, config: dict) -> dict:
-    prompt = build_user_prompt(idea, config)
-    result = await _call_groq_async_with_retry(prompt, BLUEPRINT_SYSTEM_PROMPT)
-    return result
-
-
-async def run_generator_pipeline_stream(idea: str, config: dict):
-    prompt = build_user_prompt(idea, config)
-    client = _get_async_client()
-    messages = [
-        {"role": "system", "content": BLUEPRINT_SYSTEM_PROMPT},
-        {"role": "user", "content": prompt}
-    ]
-    response_stream = await client.chat.completions.create(
-        model=settings.groq_model,
+        model=model_id,
         messages=messages,
         temperature=0.3,
         response_format={"type": "json_object"},
         max_tokens=4096,
         timeout=60,
-        stream=True
     )
-    async for chunk in response_stream:
-        content = chunk.choices[0].delta.content or ""
-        if content:
-            yield content
+    return json.loads(response.choices[0].message.content.strip())
+
+
+async def run_generator_pipeline(idea: str, config: dict) -> dict:
+    """Non-streaming pipeline that tries models in waterfall order."""
+    prompt = build_user_prompt(idea, config)
+    last_exc: Exception | None = None
+    for model_id, model_name in [(m[0], m[1]) for m in GROQ_MODEL_WATERFALL]:
+        try:
+            print(f"[INFO] Trying model: {model_name} ({model_id})")
+            return await _call_model_async(prompt, BLUEPRINT_SYSTEM_PROMPT, model_id)
+        except Exception as exc:
+            if _is_rate_limit_error(exc):
+                print(f"[WARN] Rate limit on {model_name}, falling back to next model.")
+                last_exc = exc
+                continue
+            raise
+    raise last_exc or RuntimeError("All models exhausted.")
+
+
+async def run_generator_pipeline_stream(idea: str, config: dict) -> AsyncGenerator[tuple[str, str], None]:
+    """
+    Streaming pipeline with 3-model waterfall.
+
+    Yields (event_type, payload) tuples:
+      - ("model", model_name)      when a model is selected / switched
+      - ("chunk", text_fragment)   for each token chunk
+
+    On a rate-limit the generator transparently falls over to the next model
+    and emits a new "model" event so the frontend can update the indicator.
+    """
+    prompt = build_user_prompt(idea, config)
+    client = _get_async_client()
+    messages = [
+        {"role": "system", "content": BLUEPRINT_SYSTEM_PROMPT},
+        {"role": "user", "content": prompt},
+    ]
+
+    last_exc: Exception | None = None
+    for model_id, model_name in [(m[0], m[1]) for m in GROQ_MODEL_WATERFALL]:
+        try:
+            print(f"[INFO] Streaming with model: {model_name} ({model_id})")
+            # Announce which model is now active
+            yield ("model", model_name)
+
+            response_stream = await client.chat.completions.create(
+                model=model_id,
+                messages=messages,
+                temperature=0.3,
+                response_format={"type": "json_object"},
+                max_tokens=4096,
+                timeout=120,
+                stream=True,
+            )
+            async for chunk in response_stream:
+                content = chunk.choices[0].delta.content or ""
+                if content:
+                    yield ("chunk", content)
+            # Stream completed successfully — stop waterfall
+            return
+        except Exception as exc:
+            if _is_rate_limit_error(exc):
+                print(f"[WARN] Rate limit on {model_name}, falling back to next model.")
+                last_exc = exc
+                continue
+            raise
+
+    raise last_exc or RuntimeError("All models exhausted without producing a response.")
