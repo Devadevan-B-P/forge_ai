@@ -259,21 +259,29 @@ Return ONLY the raw JSON object. No markdown, no preambles.
 """
 
 
-def _is_rate_limit_error(exc: Exception) -> bool:
-    """Return True for any rate-limit, quota, or token-capacity error from Groq.
+# Models that support response_format={"type":"json_object"}.
+# Models NOT in this set get plain-text mode; the system prompt already
+# instructs them to return raw JSON so parsing still works.
+JSON_MODE_SUPPORTED = {
+    "qwen/qwen3-32b",
+    "llama-3.3-70b-versatile",
+}
 
-    Groq returns:
-      - HTTP 429 (groq_sdk.RateLimitError) for standard rate limits
-      - HTTP 413 for "Request too large" (prompt exceeds model's TPM window)
-    Both should trigger the model waterfall fallback.
+
+def _should_try_next_model(exc: Exception) -> bool:
+    """Return True for any error that means we should try the next model.
+
+    This covers:
+    - HTTP 429 rate limits (groq_sdk.RateLimitError)
+    - HTTP 413 "Request too large" (prompt exceeds model TPM window)
+    - JSON-mode not supported / failed_generation errors
     """
     # Typed SDK exceptions
-    if isinstance(exc, (groq_sdk.RateLimitError,)):
+    if isinstance(exc, groq_sdk.RateLimitError):
         return True
-    # Some SDK versions surface 413 as a generic APIStatusError
     if isinstance(exc, groq_sdk.APIStatusError) and exc.status_code in (413, 429):
         return True
-    # String-based fallback for any wrapper exceptions
+    # String-based catch-all (covers wrapped exceptions and pipeline re-raises)
     msg = str(exc).lower()
     return (
         "rate limit" in msg
@@ -285,8 +293,12 @@ def _is_rate_limit_error(exc: Exception) -> bool:
         or "tpm" in msg
         or "quota" in msg
         or "reduce your message size" in msg
+        # JSON-mode not supported by this model
+        or "failed_generation" in msg
+        or "failed to generate json" in msg
+        or "adjust your prompt" in msg
+        or "json_validate_failed" in msg
     )
-
 
 
 async def _call_model_async(prompt: str, system_role: str, model_id: str) -> dict:
@@ -296,14 +308,17 @@ async def _call_model_async(prompt: str, system_role: str, model_id: str) -> dic
         {"role": "system", "content": system_role},
         {"role": "user", "content": prompt},
     ]
-    response = await client.chat.completions.create(
+    kwargs: dict = dict(
         model=model_id,
         messages=messages,
         temperature=0.3,
-        response_format={"type": "json_object"},
         max_tokens=4096,
         timeout=60,
     )
+    if model_id in JSON_MODE_SUPPORTED:
+        kwargs["response_format"] = {"type": "json_object"}
+
+    response = await client.chat.completions.create(**kwargs)
     return json.loads(response.choices[0].message.content.strip())
 
 
@@ -316,8 +331,8 @@ async def run_generator_pipeline(idea: str, config: dict) -> dict:
             print(f"[INFO] Trying model: {model_name} ({model_id})")
             return await _call_model_async(prompt, BLUEPRINT_SYSTEM_PROMPT, model_id)
         except Exception as exc:
-            if _is_rate_limit_error(exc):
-                print(f"[WARN] Rate limit on {model_name}, falling back to next model.")
+            if _should_try_next_model(exc):
+                print(f"[WARN] {model_name} unavailable ({exc}), falling back to next model.")
                 last_exc = exc
                 continue
             raise
@@ -332,8 +347,8 @@ async def run_generator_pipeline_stream(idea: str, config: dict) -> AsyncGenerat
       - ("model", model_name)      when a model is selected / switched
       - ("chunk", text_fragment)   for each token chunk
 
-    On a rate-limit the generator transparently falls over to the next model
-    and emits a new "model" event so the frontend can update the indicator.
+    Falls over to the next model on rate-limit, token-capacity, or
+    JSON-mode-not-supported errors, emitting a new "model" event each time.
     """
     prompt = build_user_prompt(idea, config)
     client = _get_async_client()
@@ -346,18 +361,20 @@ async def run_generator_pipeline_stream(idea: str, config: dict) -> AsyncGenerat
     for model_id, model_name in [(m[0], m[1]) for m in GROQ_MODEL_WATERFALL]:
         try:
             print(f"[INFO] Streaming with model: {model_name} ({model_id})")
-            # Announce which model is now active
             yield ("model", model_name)
 
-            response_stream = await client.chat.completions.create(
+            kwargs: dict = dict(
                 model=model_id,
                 messages=messages,
                 temperature=0.3,
-                response_format={"type": "json_object"},
                 max_tokens=4096,
                 timeout=120,
                 stream=True,
             )
+            if model_id in JSON_MODE_SUPPORTED:
+                kwargs["response_format"] = {"type": "json_object"}
+
+            response_stream = await client.chat.completions.create(**kwargs)
             async for chunk in response_stream:
                 content = chunk.choices[0].delta.content or ""
                 if content:
@@ -365,10 +382,11 @@ async def run_generator_pipeline_stream(idea: str, config: dict) -> AsyncGenerat
             # Stream completed successfully — stop waterfall
             return
         except Exception as exc:
-            if _is_rate_limit_error(exc):
-                print(f"[WARN] Rate limit on {model_name}, falling back to next model.")
+            if _should_try_next_model(exc):
+                print(f"[WARN] {model_name} unavailable ({exc}), falling back to next model.")
                 last_exc = exc
                 continue
             raise
 
     raise last_exc or RuntimeError("All models exhausted without producing a response.")
+
