@@ -661,7 +661,7 @@ export default function Generator() {
 
   return (
     <div
-      className="relative min-h-screen bg-[#000000] text-white overflow-x-hidden"
+      className="relative min-h-screen bg-[#000000] text-white"
       style={{ fontFamily: "'Inter', sans-serif" }}
     >
       {/* Particle background */}
