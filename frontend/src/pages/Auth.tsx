@@ -1,7 +1,7 @@
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
-  Eye, EyeOff, Loader2, ArrowRight, Lock, Mail, User,
+  Eye, EyeOff, Loader2, ArrowRight, Lock, Mail, User, X,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../hooks/useAuth";
@@ -35,6 +35,19 @@ export default function Auth() {
   const [error, setError] = useState<string | null>(null);
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+
+  // Lock body scroll when Terms Modal is open
+  useEffect(() => {
+    if (showTermsModal) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [showTermsModal]);
 
   const passwordStrength = PASSWORD_RULES.filter((r) => r.test(password)).length;
 
@@ -301,7 +314,7 @@ export default function Auth() {
                         className="mt-0.5 w-3.5 h-3.5 rounded border border-[#22252B] bg-[#050505]/40 text-[#5FA9FF] focus:ring-0 focus:ring-offset-0 transition-colors cursor-pointer"
                       />
                       <span className="text-[11px] text-[#9CA3AF] leading-relaxed select-none group-hover:text-white transition-colors">
-                        I agree to the <span className="text-[#5FA9FF] font-medium hover:underline cursor-pointer" onClick={(e) => { e.preventDefault(); e.stopPropagation(); alert("Terms and Conditions:\n\n1. By signing up, you agree that you are creating blueprints for design and educational purposes.\n2. All generation runs are subject to fair use limits.\n3. You are responsible for ensuring that any blueprints generated do not infringe on other intellectual property rights.\n4. Forge AI provides recommendations 'as is' without warranties."); }}>Terms and Conditions</span>
+                        I agree to the <span className="text-[#5FA9FF] font-medium hover:underline cursor-pointer" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowTermsModal(true); }}>Terms and Conditions</span>
                       </span>
                     </label>
                   </motion.div>
@@ -369,6 +382,63 @@ export default function Auth() {
           </p>
         </div>
       </motion.div>
+
+      {/* ── Terms and Conditions Modal ──────────────────────────── */}
+      <AnimatePresence>
+        {showTermsModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+            onClick={() => setShowTermsModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 12 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 12 }}
+              transition={{ type: "spring", duration: 0.4 }}
+              className="bg-[#0e1014] border border-[#22252B] rounded-2xl w-full max-w-md p-6 shadow-2xl relative"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Close button */}
+              <button
+                onClick={() => setShowTermsModal(false)}
+                className="w-8 h-8 rounded-full bg-[#1c2027] hover:bg-[#252c38] flex items-center justify-center text-[#9AA3AF] hover:text-white transition-colors absolute top-4 right-4"
+              >
+                <X size={14} />
+              </button>
+
+              <h3 className="text-base font-semibold text-white mb-4 pr-6">Terms and Conditions</h3>
+
+              <div className="space-y-3.5 text-xs text-[#9CA3AF] leading-relaxed max-h-[50vh] overflow-y-auto pr-1">
+                <p>By signing up to Forge AI, you acknowledge and agree to the following terms:</p>
+                <ol className="space-y-3.5 list-decimal pl-4">
+                  <li>
+                    <strong className="text-white font-medium">Educational & Design Use:</strong> You agree that you are generating architectural blueprints solely for design, planning, and educational purposes.
+                  </li>
+                  <li>
+                    <strong className="text-white font-medium">Fair Use Limits:</strong> All blueprint and code generation runs are subject to standard fair use rate limits to prevent API abuse.
+                  </li>
+                  <li>
+                    <strong className="text-white font-medium">Intellectual Property:</strong> You are responsible for ensuring that your input descriptions and generated architectures do not infringe on any third-party intellectual property.
+                  </li>
+                  <li>
+                    <strong className="text-white font-medium">No Warranties (As-Is):</strong> Forge AI provides recommendations "as is" without warranties of any kind. Implementations should always be audited by human engineers before production deployment.
+                  </li>
+                </ol>
+              </div>
+
+              <button
+                onClick={() => setShowTermsModal(false)}
+                className="mt-6 w-full py-2.5 px-4 rounded-xl bg-white text-[#050505] font-semibold text-xs hover:bg-[#7AB8FF] transition-all"
+              >
+                I Understand & Accept
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

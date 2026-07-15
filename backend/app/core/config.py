@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 60 * 24 * 7  # 7 days
 
+    # Redis
+    redis_url: str = ""
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 
