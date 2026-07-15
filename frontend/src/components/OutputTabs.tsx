@@ -112,36 +112,38 @@ export default function OutputTabs({
         ))}
       </div>
       <div className="p-6">
-        {active === "Prompt Analysis" && <PromptAnalysisTab bp={bp} />}
-        {active === "PRD" && <PrdTab bp={bp} />}
-        {active === "Overview" && <OverviewTab bp={bp} />}
-        {active === "Features" && <FeaturesTab bp={bp} />}
-        {active === "Tech Stack" && <TechStackTab bp={bp} />}
-        {active === "Database" && (
-          <DatabaseTab
-            bp={bp}
-            dialect={config.database}
-            cachedSql={cachedSql}
-            setCachedSql={setCachedSql}
-            historyId={historyId}
-          />
-        )}
-        {active === "API" && (
-          <ApiTab
-            bp={bp}
-            framework={config.backend}
-            cachedApiCodes={cachedApiCodes}
-            setCachedApiCodes={setCachedApiCodes}
-            historyId={historyId}
-          />
-        )}
-        {active === "Folder" && <FolderTab bp={bp} />}
-        {active === "AWS" && <AwsTab bp={bp} />}
-        {active === "Docker" && <DockerTab bp={bp} />}
-        {active === "Timeline" && <TimelineTab bp={bp} />}
-        {active === "Security" && <SecurityTab bp={bp} />}
-        {active === "AI Recommendations" && <AiRecommendationsTab bp={bp} />}
-        {active === "Mermaid Diagrams" && <MermaidTab bp={bp} />}
+        <div key={active} className="animate-tab-fade">
+          {active === "Prompt Analysis" && <PromptAnalysisTab bp={bp} />}
+          {active === "PRD" && <PrdTab bp={bp} />}
+          {active === "Overview" && <OverviewTab bp={bp} />}
+          {active === "Features" && <FeaturesTab bp={bp} />}
+          {active === "Tech Stack" && <TechStackTab bp={bp} />}
+          {active === "Database" && (
+            <DatabaseTab
+              bp={bp}
+              dialect={config.database}
+              cachedSql={cachedSql}
+              setCachedSql={setCachedSql}
+              historyId={historyId}
+            />
+          )}
+          {active === "API" && (
+            <ApiTab
+              bp={bp}
+              framework={config.backend}
+              cachedApiCodes={cachedApiCodes}
+              setCachedApiCodes={setCachedApiCodes}
+              historyId={historyId}
+            />
+          )}
+          {active === "Folder" && <FolderTab bp={bp} />}
+          {active === "AWS" && <AwsTab bp={bp} />}
+          {active === "Docker" && <DockerTab bp={bp} />}
+          {active === "Timeline" && <TimelineTab bp={bp} />}
+          {active === "Security" && <SecurityTab bp={bp} />}
+          {active === "AI Recommendations" && <AiRecommendationsTab bp={bp} />}
+          {active === "Mermaid Diagrams" && <MermaidTab bp={bp} />}
+        </div>
       </div>
     </div>
   );

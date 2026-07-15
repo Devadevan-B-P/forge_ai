@@ -39,7 +39,7 @@ export default function CodeModal({
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        className="relative w-full max-w-3xl max-h-[88vh] flex flex-col rounded-2xl overflow-hidden"
+        className="relative w-full max-w-3xl max-h-[88vh] flex flex-col rounded-2xl overflow-hidden animate-modal-in"
         style={{
           background: "#0E1014",
           border: "1px solid #22252B",

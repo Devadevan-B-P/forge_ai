@@ -69,6 +69,20 @@ function parsePartialJson(partialJson: string) {
   }
 }
 
+function getFriendlyErrorMessage(msg: string): string {
+  const lowercaseMsg = msg.toLowerCase();
+  if (lowercaseMsg.includes("rate limit") || lowercaseMsg.includes("429")) {
+    return "Unable to contact the AI service due to high traffic volume. Please try again in a few moments.";
+  }
+  if (lowercaseMsg.includes("groq") || lowercaseMsg.includes("api key") || lowercaseMsg.includes("unauthorized") || lowercaseMsg.includes("forbidden") || lowercaseMsg.includes("failed to start") || lowercaseMsg.includes("failed to initiate")) {
+    return "Unable to contact the AI service. Please try again in a few moments.";
+  }
+  if (lowercaseMsg.includes("json")) {
+    return "The system blueprint could not be parsed. Please try generating again.";
+  }
+  return msg || "Unable to contact the AI service. Please try again in a few moments.";
+}
+
 const DEFAULT_CONFIG: BlueprintConfig = {
   architectureStyle: "Monolithic",
   database: "PostgreSQL",
@@ -179,6 +193,7 @@ export default function Generator() {
   const [stepIndex, setStepIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [blueprint, setBlueprint] = useState<Blueprint | null>(null);
+  const [sidebarMode, setSidebarMode] = useState<"flow" | "list">("flow");
   const [typingState, setTypingState] = useState<"empty" | "typing" | "idle">("empty");
 
   const [cachedSql, setCachedSql] = useState<string | null>(null);
@@ -422,7 +437,7 @@ export default function Generator() {
       const updatedHistory = await fetchHistory();
       setHistory(updatedHistory);
     } catch (e: any) {
-      setError(e.message || "Failed to generate blueprint.");
+      setError(getFriendlyErrorMessage(e.message || ""));
     } finally {
       setLoading(false);
     }
@@ -899,39 +914,148 @@ export default function Generator() {
           {/* Right: Live Architecture Preview */}
           <div className="lg:col-span-1 sticky top-8">
             <div className="rounded-2xl p-5 flex flex-col gap-4" style={{ background: "#0E1014", border: "1px solid #22252B" }}>
-              <div>
-                <h3 className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "#5FA9FF" }}>
-                  Live Architecture
-                </h3>
-                <p className="text-[10px] leading-relaxed" style={{ color: "#9CA3AF" }}>
-                  Real-time visualization of your stack
-                </p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "#5FA9FF" }}>
+                    Live Architecture
+                  </h3>
+                  <p className="text-[10px] leading-relaxed" style={{ color: "#9CA3AF" }}>
+                    Real-time visualization of your stack
+                  </p>
+                </div>
+                <div className="flex bg-[#12151C] rounded-lg p-0.5 border border-white/5 shrink-0 select-none">
+                  <button
+                    onClick={() => setSidebarMode("flow")}
+                    className={`text-[8px] uppercase tracking-wider font-semibold px-2 py-1 rounded transition-all duration-200 ${
+                      sidebarMode === "flow"
+                        ? "bg-[#5FA9FF]/10 text-white font-bold"
+                        : "text-slate-500 hover:text-slate-300"
+                    }`}
+                  >
+                    Flow
+                  </button>
+                  <button
+                    onClick={() => setSidebarMode("list")}
+                    className={`text-[8px] uppercase tracking-wider font-semibold px-2 py-1 rounded transition-all duration-200 ${
+                      sidebarMode === "list"
+                        ? "bg-[#5FA9FF]/10 text-white font-bold"
+                        : "text-slate-500 hover:text-slate-300"
+                    }`}
+                  >
+                    List
+                  </button>
+                </div>
               </div>
 
-              <div className="flex flex-col gap-1.5 min-h-[280px]">
-                {simulatedStack.map((item, idx) => (
-                  <div
-                    key={item.name}
-                    className="flex items-center gap-2.5 py-2 px-3 rounded-lg transition-all duration-200"
-                    style={{
-                      background: "rgba(255,255,255,0.03)",
-                      border: "1px solid rgba(255,255,255,0.05)",
-                      animationDelay: `${idx * 0.04}s`,
-                    }}
-                  >
-                    <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: CAT_COLOR[item.cat] || "#9CA3AF" }} />
-                    <p className="text-[11px] font-medium flex-1 min-w-0 truncate" style={{ color: "#E2E8F0" }}>
-                      {item.name}
-                    </p>
-                    <span
-                      className="text-[8px] px-1.5 py-0.5 rounded font-mono uppercase shrink-0"
-                      style={{ background: `${CAT_COLOR[item.cat]}18` || "rgba(255,255,255,0.06)", color: CAT_COLOR[item.cat] || "#9CA3AF", border: `1px solid ${CAT_COLOR[item.cat]}30` }}
-                    >
-                      {item.cat}
-                    </span>
+              {sidebarMode === "flow" ? (
+                <div className="flex flex-col items-center gap-0 w-full py-4 min-h-[280px]">
+                  {/* 1. Cloud Provider Node */}
+                  {simulatedStack.find((n) => n.cat === "Cloud") && (
+                    <div className="flex flex-col items-center w-full animate-tab-fade">
+                      <div className="px-3 py-1.5 rounded-lg border border-[#5FA9FF]/30 bg-[#5FA9FF]/5 text-center text-[10px] font-semibold text-white max-w-[95%] truncate">
+                        🌐 {simulatedStack.find((n) => n.cat === "Cloud")?.name}
+                      </div>
+                      <div className="w-0.5 h-3 bg-gradient-to-b from-[#5FA9FF]/40 to-transparent" />
+                    </div>
+                  )}
+
+                  {/* 2. Frontend Node */}
+                  {simulatedStack.find((n) => n.cat === "Frontend") && (
+                    <div className="flex flex-col items-center w-full animate-tab-fade">
+                      <div className="px-3 py-2 rounded-lg border border-[#5FA9FF]/30 bg-[#5FA9FF]/10 text-center text-[10px] font-semibold text-white w-[95%] truncate shadow-[0_0_15px_rgba(95,169,255,0.05)]">
+                        💻 {simulatedStack.find((n) => n.cat === "Frontend")?.name}
+                      </div>
+                      <div className="w-0.5 h-3 bg-white/10" />
+                    </div>
+                  )}
+
+                  {/* 3. Backend Node */}
+                  {simulatedStack.find((n) => n.cat === "Backend") && (
+                    <div className="flex flex-col items-center w-full animate-tab-fade">
+                      <div className="px-3 py-2 rounded-lg border border-[#7AB8FF]/30 bg-[#7AB8FF]/10 text-center text-[10px] font-semibold text-white w-[95%] truncate shadow-[0_0_15px_rgba(122,184,255,0.05)]">
+                        ⚙️ {simulatedStack.find((n) => n.cat === "Backend")?.name}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Connector line splitting */}
+                  <div className="flex justify-between w-full px-[25%] text-[8px] text-white/20 h-2.5 font-mono leading-none select-none animate-tab-fade">
+                    <span>┌──</span>
+                    <span>┴</span>
+                    <span>──┐</span>
                   </div>
-                ))}
-              </div>
+
+                  {/* 4. Split Layer: Database vs Extras */}
+                  <div className="w-full grid grid-cols-2 gap-2 px-1 items-stretch animate-tab-fade">
+                    {/* Database */}
+                    {simulatedStack.find((n) => n.cat === "Database") && (
+                      <div className="flex flex-col items-center p-2 rounded-lg border border-[#3DD9A4]/20 bg-[#3DD9A4]/5 justify-center min-h-[56px] min-w-0">
+                        <span className="text-[7px] uppercase tracking-wider text-[#3DD9A4]/80 mb-1 font-mono font-bold">Database</span>
+                        <span className="text-[9px] font-semibold text-slate-200 text-center line-clamp-2 leading-tight">
+                          {simulatedStack.find((n) => n.cat === "Database")?.name.replace(" Relational DB", "").replace(" Relational Database", "").replace(" NoSQL Database", "")}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Extras Cache/Storage */}
+                    <div className="flex flex-col items-center p-2 rounded-lg border border-[#A78BFA]/20 bg-[#A78BFA]/5 justify-center min-h-[56px] min-w-0">
+                      {simulatedStack.find((n) => n.cat === "Caching") ? (
+                        <>
+                          <span className="text-[7px] uppercase tracking-wider text-[#A78BFA]/80 mb-1 font-mono font-bold">In-Memory</span>
+                          <span className="text-[9px] font-semibold text-slate-200 text-center leading-tight">Redis Cache</span>
+                        </>
+                      ) : simulatedStack.find((n) => n.cat === "Storage") ? (
+                        <>
+                          <span className="text-[7px] uppercase tracking-wider text-[#06B6D4]/80 mb-1 font-mono font-bold">Storage</span>
+                          <span className="text-[9px] font-semibold text-slate-200 text-center leading-tight">AWS S3</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-[7px] uppercase tracking-wider text-slate-400 mb-1 font-mono font-bold">Host Env</span>
+                          <span className="text-[9px] font-semibold text-slate-300 text-center leading-tight truncate w-full">
+                            {simulatedStack.find((n) => n.cat === "Deployment")?.name.replace(" Environment", "").replace(" Cluster / Helm", "")}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Runner Node at Bottom */}
+                  {simulatedStack.find((n) => n.cat === "Deployment") && (
+                    <div className="flex flex-col items-center w-full mt-2 animate-tab-fade">
+                      <div className="w-0.5 h-3 bg-white/10" />
+                      <div className="px-2 py-0.5 rounded border border-white/10 bg-white/[0.02] text-center text-[8px] font-medium text-slate-400 max-w-[90%] truncate font-mono">
+                        ⚙️ {simulatedStack.find((n) => n.cat === "Deployment")?.name}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="flex flex-col gap-1.5 min-h-[280px] animate-tab-fade">
+                  {simulatedStack.map((item, idx) => (
+                    <div
+                      key={item.name}
+                      className="flex items-center gap-2.5 py-2 px-3 rounded-lg transition-all duration-200"
+                      style={{
+                        background: "rgba(255,255,255,0.03)",
+                        border: "1px solid rgba(255,255,255,0.05)",
+                        animationDelay: `${idx * 0.04}s`,
+                      }}
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: CAT_COLOR[item.cat] || "#9CA3AF" }} />
+                      <p className="text-[11px] font-medium flex-1 min-w-0 truncate" style={{ color: "#E2E8F0" }}>
+                        {item.name}
+                      </p>
+                      <span
+                        className="text-[8px] px-1.5 py-0.5 rounded font-mono uppercase shrink-0"
+                        style={{ background: `${CAT_COLOR[item.cat]}18` || "rgba(255,255,255,0.06)", color: CAT_COLOR[item.cat] || "#9CA3AF", border: `1px solid ${CAT_COLOR[item.cat]}30` }}
+                      >
+                        {item.cat}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {blueprint && (
                 <button
