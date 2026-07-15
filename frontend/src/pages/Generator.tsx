@@ -935,9 +935,9 @@ export default function Generator() {
             </div>
           </div>
 
-          {/* Right: Live Architecture Preview (outer column container is sticky) */}
-          <div className="lg:col-span-1 sticky top-8">
-            <div className="rounded-2xl p-5 flex flex-col gap-4 animate-tab-fade" style={{ background: "#0E1014", border: "1px solid #22252B" }}>
+          {/* Right: Live Architecture Preview */}
+          <div className="lg:col-span-1">
+            <div className="rounded-2xl p-5 flex flex-col gap-4 animate-tab-fade sticky top-8" style={{ background: "#0E1014", border: "1px solid #22252B" }}>
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "#5FA9FF" }}>
