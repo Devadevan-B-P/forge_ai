@@ -801,7 +801,7 @@ export default function Generator() {
         </AnimatedContent>
 
         {/* ── Main Grid ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
 
           {/* Left: Input + Config */}
           <div className="lg:col-span-2 flex flex-col gap-5 page-enter">
@@ -933,11 +933,136 @@ export default function Generator() {
                 </>
               )}
             </div>
+
+            {/* ── Blueprint Output ── */}
+            <div ref={outputRef} className="scroll-mt-8">
+              {loading && !blueprint && (
+                <div className="glass rounded-2xl border border-[#22252B] p-8 flex flex-col gap-8 mb-8">
+                  {/* Heading */}
+                  <div className="flex items-center justify-between pb-4 border-b border-border/40">
+                    <div className="flex items-center gap-3">
+                      <Loader2 className="animate-spin text-[#5FA9FF]" size={20} />
+                      <div>
+                        <h3 className="text-sm font-semibold text-white">Architecting System...</h3>
+                        <p className="text-[10px] text-slate-400">Please wait while the AI models design your solution</p>
+                      </div>
+                    </div>
+                    <span className="text-[10px] bg-[#5FA9FF]/10 text-[#5FA9FF] border border-[#5FA9FF]/20 px-2 py-0.5 rounded-full font-mono font-medium animate-pulse">
+                      {Math.round(((stepIndex + 1) / GENERATION_STEPS.length) * 100)}%
+                    </span>
+                  </div>
+
+                  {/* Progress bar */}
+                  <div className="h-1.5 w-full bg-[#22252B] rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-[#5FA9FF] to-[#3B82F6] transition-all duration-500 rounded-full"
+                      style={{ width: `${((stepIndex + 1) / GENERATION_STEPS.length) * 100}%` }}
+                    />
+                  </div>
+
+                  {/* Steps progression checklist */}
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    {GENERATION_STEPS.map((step, idx) => {
+                      const isCompleted = idx < stepIndex;
+                      const isActive = idx === stepIndex;
+                      return (
+                        <div
+                          key={step}
+                          className={`flex items-center gap-3 p-3.5 rounded-xl border transition-all duration-300 ${
+                            isCompleted
+                              ? "bg-[#3DD9A4]/5 border-[#3DD9A4]/20 text-slate-300"
+                              : isActive
+                              ? "bg-[#5FA9FF]/5 border-[#5FA9FF]/30 text-white shadow-[0_0_15px_rgba(95,169,255,0.06)] animate-pulse"
+                              : "bg-white/[0.01] border-white/5 text-slate-500"
+                          }`}
+                        >
+                          {isCompleted ? (
+                            <div className="w-4 h-4 rounded-full bg-[#3DD9A4] flex items-center justify-center text-[#050505] text-[10px] font-bold">✓</div>
+                          ) : isActive ? (
+                            <Loader2 className="animate-spin text-[#5FA9FF]" size={14} />
+                          ) : (
+                            <div className="w-4 h-4 rounded-full border border-white/10" />
+                          )}
+                          <span className="text-xs font-medium font-sans">{step}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Skeleton Cards */}
+                  <div className="space-y-4 pt-4 border-t border-border/40">
+                    <div className="h-4 bg-white/10 rounded w-1/4 animate-pulse" />
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="h-24 bg-white/5 rounded-xl border border-white/5 animate-pulse" />
+                      <div className="h-24 bg-white/5 rounded-xl border border-white/5 animate-pulse" />
+                      <div className="h-24 bg-white/5 rounded-xl border border-white/5 animate-pulse" />
+                    </div>
+                    <div className="space-y-2">
+                      <div className="h-3 bg-white/5 rounded w-5/6 animate-pulse" />
+                      <div className="h-3 bg-white/5 rounded w-4/6 animate-pulse" />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {blueprint && (
+                <FadeContent blur={true} duration={1000} ease="power2.out" initialOpacity={0}>
+                  <div
+                    className="rounded-2xl overflow-hidden mb-8"
+                    style={{ border: "1px solid #22252B" }}
+                  >
+                    {/* Output header */}
+                    <div
+                      className="px-6 py-4 flex items-center justify-between"
+                      style={{ background: "#0E1014", borderBottom: "1px solid #22252B" }}
+                    >
+                      <div className="flex items-center gap-3">
+                        {loading ? (
+                          <Loader2 className="animate-spin text-[#5FA9FF]" size={14} />
+                        ) : (
+                          <div className="w-2 h-2 rounded-full bg-[#3DD9A4]" />
+                        )}
+                        <p className="text-sm font-medium text-white">
+                          {loading ? "Streaming blueprint..." : "Blueprint Generated"}
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5 max-w-[60%] justify-end">
+                        {Object.values(config).map((v) => (
+                          <span
+                            key={v}
+                            className="text-[10px] px-2 py-0.5 rounded-full"
+                            style={{ background: "rgba(95,169,255,0.1)", border: "1px solid rgba(95,169,255,0.2)", color: "#7AB8FF" }}
+                          >
+                            {v}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Idea quote */}
+                    <div className="px-6 py-3" style={{ background: "#080A0D", borderBottom: "1px solid #22252B" }}>
+                      <p className="text-xs italic line-clamp-2" style={{ color: "#9CA3AF" }}>"{idea}"</p>
+                    </div>
+
+                    {/* Output tabs */}
+                    <OutputTabs
+                      bp={blueprint}
+                      config={config}
+                      cachedSql={cachedSql}
+                      setCachedSql={setCachedSql}
+                      cachedApiCodes={cachedApiCodes}
+                      setCachedApiCodes={setCachedApiCodes}
+                      historyId={activeHistoryId}
+                    />
+                  </div>
+                </FadeContent>
+              )}
+            </div>
           </div>
 
           {/* Right: Live Architecture Preview */}
-          <div className="lg:col-span-1 sticky top-8">
-            <div className="rounded-2xl p-5 flex flex-col gap-4" style={{ background: "#0E1014", border: "1px solid #22252B" }}>
+          <div className="lg:col-span-1">
+            <div className="rounded-2xl p-5 flex flex-col gap-4 animate-tab-fade sticky top-8" style={{ background: "#0E1014", border: "1px solid #22252B" }}>
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "#5FA9FF" }}>
@@ -1093,131 +1218,6 @@ export default function Generator() {
               )}
             </div>
           </div>
-        </div>
-
-        {/* ── Blueprint Output ── */}
-        <div ref={outputRef} className="scroll-mt-8">
-          {loading && !blueprint && (
-            <div className="glass rounded-2xl border border-[#22252B] p-8 flex flex-col gap-8 mb-8">
-              {/* Heading */}
-              <div className="flex items-center justify-between pb-4 border-b border-border/40">
-                <div className="flex items-center gap-3">
-                  <Loader2 className="animate-spin text-[#5FA9FF]" size={20} />
-                  <div>
-                    <h3 className="text-sm font-semibold text-white">Architecting System...</h3>
-                    <p className="text-[10px] text-slate-400">Please wait while the AI models design your solution</p>
-                  </div>
-                </div>
-                <span className="text-[10px] bg-[#5FA9FF]/10 text-[#5FA9FF] border border-[#5FA9FF]/20 px-2 py-0.5 rounded-full font-mono font-medium animate-pulse">
-                  {Math.round(((stepIndex + 1) / GENERATION_STEPS.length) * 100)}%
-                </span>
-              </div>
-
-              {/* Progress bar */}
-              <div className="h-1.5 w-full bg-[#22252B] rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-[#5FA9FF] to-[#3B82F6] transition-all duration-500 rounded-full"
-                  style={{ width: `${((stepIndex + 1) / GENERATION_STEPS.length) * 100}%` }}
-                />
-              </div>
-
-              {/* Steps progression checklist */}
-              <div className="grid sm:grid-cols-2 gap-4">
-                {GENERATION_STEPS.map((step, idx) => {
-                  const isCompleted = idx < stepIndex;
-                  const isActive = idx === stepIndex;
-                  return (
-                    <div
-                      key={step}
-                      className={`flex items-center gap-3 p-3.5 rounded-xl border transition-all duration-300 ${
-                        isCompleted
-                          ? "bg-[#3DD9A4]/5 border-[#3DD9A4]/20 text-slate-300"
-                          : isActive
-                          ? "bg-[#5FA9FF]/5 border-[#5FA9FF]/30 text-white shadow-[0_0_15px_rgba(95,169,255,0.06)] animate-pulse"
-                          : "bg-white/[0.01] border-white/5 text-slate-500"
-                      }`}
-                    >
-                      {isCompleted ? (
-                        <div className="w-4 h-4 rounded-full bg-[#3DD9A4] flex items-center justify-center text-[#050505] text-[10px] font-bold">✓</div>
-                      ) : isActive ? (
-                        <Loader2 className="animate-spin text-[#5FA9FF]" size={14} />
-                      ) : (
-                        <div className="w-4 h-4 rounded-full border border-white/10" />
-                      )}
-                      <span className="text-xs font-medium font-sans">{step}</span>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Skeleton Cards */}
-              <div className="space-y-4 pt-4 border-t border-border/40">
-                <div className="h-4 bg-white/10 rounded w-1/4 animate-pulse" />
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="h-24 bg-white/5 rounded-xl border border-white/5 animate-pulse" />
-                  <div className="h-24 bg-white/5 rounded-xl border border-white/5 animate-pulse" />
-                  <div className="h-24 bg-white/5 rounded-xl border border-white/5 animate-pulse" />
-                </div>
-                <div className="space-y-2">
-                  <div className="h-3 bg-white/5 rounded w-5/6 animate-pulse" />
-                  <div className="h-3 bg-white/5 rounded w-4/6 animate-pulse" />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {blueprint && (
-            <FadeContent blur={true} duration={1000} ease="power2.out" initialOpacity={0}>
-              <div
-                className="rounded-2xl overflow-hidden mb-8"
-                style={{ border: "1px solid #22252B" }}
-              >
-                {/* Output header */}
-                <div
-                  className="px-6 py-4 flex items-center justify-between"
-                  style={{ background: "#0E1014", borderBottom: "1px solid #22252B" }}
-                >
-                  <div className="flex items-center gap-3">
-                    {loading ? (
-                      <Loader2 className="animate-spin text-[#5FA9FF]" size={14} />
-                    ) : (
-                      <div className="w-2 h-2 rounded-full bg-[#3DD9A4]" />
-                    )}
-                    <p className="text-sm font-medium text-white">
-                      {loading ? "Streaming blueprint..." : "Blueprint Generated"}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5 max-w-[60%] justify-end">
-                    {Object.values(config).map((v) => (
-                      <span
-                        key={v}
-                        className="text-[10px] px-2 py-0.5 rounded-full"
-                        style={{ background: "rgba(95,169,255,0.1)", border: "1px solid rgba(95,169,255,0.2)", color: "#7AB8FF" }}
-                      >
-                        {v}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Idea quote */}
-                <div className="px-6 py-3" style={{ background: "#080A0D", borderBottom: "1px solid #22252B" }}>
-                  <p className="text-xs italic line-clamp-2" style={{ color: "#9CA3AF" }}>"{idea}"</p>
-                </div>
-
-                {/* Output tabs */}
-                <OutputTabs
-                  bp={blueprint}
-                  config={config}
-                  cachedSql={cachedSql}
-                  setCachedSql={setCachedSql}
-                  cachedApiCodes={cachedApiCodes}
-                  setCachedApiCodes={setCachedApiCodes}
-                  historyId={activeHistoryId}
-                />
-              </div>
-            </FadeContent>
-          )}
         </div>
 
         {/* Footer */}
