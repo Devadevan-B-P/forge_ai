@@ -6,7 +6,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../hooks/useAuth";
 import SiteNav from "../components/SiteNav";
-import Strands from "../components/vendor/Strands";
+import SoftAurora from "../components/vendor/SoftAurora";
 import ShinyText from "../components/vendor/ShinyText";
 import SpotlightCard from "../components/vendor/SpotlightCard";
 import { getErrorMessage } from "../services/api";
@@ -94,21 +94,22 @@ export default function Auth() {
 
       {/* Interactive Backgrounds */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-        <div className="absolute inset-0 opacity-20">
-          <Strands
-            colors={["#5FA9FF", "#3DD9A4", "#22252B"]}
-            count={3}
-            speed={0.3}
-            amplitude={1.0}
-            waviness={1.0}
-            thickness={0.8}
-            glow={2.0}
-            taper={2}
-            spread={1.5}
-            intensity={0.4}
-            saturation={1.2}
-            opacity={0.6}
-            scale={1.5}
+        <div className="absolute inset-0 opacity-30">
+          <SoftAurora
+            speed={0.5}
+            scale={1.4}
+            brightness={1.0}
+            color1="#5FA9FF"
+            color2="#3DD9A4"
+            noiseFrequency={2.2}
+            noiseAmplitude={0.8}
+            bandHeight={0.45}
+            bandSpread={1.2}
+            octaveDecay={0.15}
+            layerOffset={0.3}
+            colorSpeed={0.8}
+            enableMouseInteraction={true}
+            mouseInfluence={0.2}
           />
         </div>
       </div>
