@@ -312,7 +312,7 @@ async def _call_model_async(prompt: str, system_role: str, model_id: str) -> dic
         model=model_id,
         messages=messages,
         temperature=0.3,
-        max_tokens=4096,
+        max_tokens=8192,
         timeout=60,
     )
     if model_id in JSON_MODE_SUPPORTED:
@@ -367,7 +367,7 @@ async def run_generator_pipeline_stream(idea: str, config: dict) -> AsyncGenerat
                 model=model_id,
                 messages=messages,
                 temperature=0.3,
-                max_tokens=4096,
+                max_tokens=8192,
                 timeout=120,
                 stream=True,
             )
