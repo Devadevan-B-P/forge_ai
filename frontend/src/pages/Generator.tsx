@@ -512,8 +512,8 @@ export default function Generator() {
 
   return (
     <div
-      className="min-h-screen text-white page-enter"
-      style={{ fontFamily: "'Inter', sans-serif", background: "#050505" }}
+      className="relative min-h-screen bg-[#050505] text-white overflow-x-hidden page-enter"
+      style={{ fontFamily: "'Inter', sans-serif" }}
     >
       {/* Particle background */}
       <canvas
