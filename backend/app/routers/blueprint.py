@@ -137,6 +137,7 @@ async def generate_stream(req: BlueprintRequest, current_user: dict = Depends(ge
             async for event_type, payload in run_generator_pipeline_stream(req.idea, req.config.model_dump()):
                 if event_type == "model":
                     # Tell the browser which model is currently active
+                    accumulated_text = ""
                     yield f"data: {json.dumps({'type': 'model', 'name': payload})}\n\n"
                 elif event_type == "chunk":
                     accumulated_text += payload

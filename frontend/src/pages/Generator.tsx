@@ -505,7 +505,9 @@ export default function Generator() {
 
           if (parsed.type === "model") {
             // Backend is switching / confirming which model is active
+            accumulatedText = "";
             setActiveModel(parsed.name);
+            setBlueprint(null);
           } else if (parsed.type === "chunk") {
             accumulatedText += parsed.text;
             const partialBp = parsePartialJson(accumulatedText);

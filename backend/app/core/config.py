@@ -4,13 +4,13 @@ from typing import List
 
 # ─── Model waterfall ─────────────────────────────────────────────────────────
 # Tried in order; if a model hits a rate-limit the next one is used.
-# Each tuple: (model_id, human_readable_name, max_output_tokens)
+# Each tuple: (model_id, human_readable_name, max_output_tokens, tpm_limit)
 # max_output_tokens is set conservatively below each model's TPM limit
 # so the total request (input ~2k tokens + output) stays under the cap.
 GROQ_MODEL_WATERFALL: List[tuple] = [
-    ("qwen/qwen3-32b",          "Qwen3 32B",   3500),   # TPM limit 6k
-    ("openai/gpt-oss-120b",     "GPT-OSS 120B", 6000),  # TPM limit 8k
-    ("llama-3.3-70b-versatile", "Llama 3.3 70B", 10000), # TPM limit 12k
+    ("qwen/qwen3-32b",          "Qwen3 32B",      3500,  6000),
+    ("openai/gpt-oss-120b",     "GPT-OSS 120B",    6000,  8000),
+    ("llama-3.3-70b-versatile", "Llama 3.3 70B", 10000, 12000),
 ]
 
 

@@ -1,4 +1,5 @@
 import json
+import time
 import groq as groq_sdk
 from groq import AsyncGroq
 from typing import AsyncGenerator
@@ -7,6 +8,64 @@ from app.core.config import settings, GROQ_MODEL_WATERFALL
 from app.prompts.system_prompt import BLUEPRINT_SYSTEM_PROMPT, build_user_prompt
 
 _async_client: AsyncGroq | None = None
+_redis_client = None
+
+if settings.redis_url:
+    try:
+        import redis.asyncio as aioredis
+        _redis_client = aioredis.from_url(settings.redis_url, decode_responses=True)
+    except Exception as e:
+        print(f"[WARN] Failed to initialize Redis token tracker in pipeline: {e}")
+
+
+# ─── Rate Limiting / Token Waterfall Tracking State ──────────────────────────
+# In-memory rate limiting state fallback (blocked until timestamp)
+_in_memory_blocked_until: dict[str, float] = {}
+
+
+def _is_in_memory_blocked(model_id: str) -> bool:
+    blocked_until = _in_memory_blocked_until.get(model_id, 0)
+    return time.time() < blocked_until
+
+
+def _mark_in_memory_blocked(model_id: str, duration: float = 30.0):
+    _in_memory_blocked_until[model_id] = time.time() + duration
+
+
+async def _get_model_token_usage(model_id: str) -> int:
+    """Get estimated token usage in the last 60 seconds from Redis."""
+    if _redis_client is None:
+        return 0
+    try:
+        val = await _redis_client.get(f"tpm_tracker:{model_id}")
+        return int(val) if val else 0
+    except Exception:
+        return 0
+
+
+async def _incr_model_token_usage(model_id: str, tokens: int):
+    """Increment token usage in Redis with a 60s TTL."""
+    if _redis_client is None:
+        return
+    try:
+        key = f"tpm_tracker:{model_id}"
+        async with _redis_client.pipeline(transaction=True) as pipe:
+            pipe.incrby(key, tokens)
+            pipe.expire(key, 60, nx=True)
+            await pipe.execute()
+    except Exception:
+        pass
+
+
+async def _mark_model_rate_limited(model_id: str, tpm_limit: int):
+    """Mark model as fully rate limited/exhausted for the next 30 seconds."""
+    if _redis_client is None:
+        return
+    try:
+        key = f"tpm_tracker:{model_id}"
+        await _redis_client.set(key, tpm_limit, ex=30)
+    except Exception:
+        pass
 
 
 def _get_async_client() -> AsyncGroq:
@@ -83,14 +142,50 @@ async def _call_model_async(
 async def run_generator_pipeline(idea: str, config: dict) -> dict:
     """Non-streaming pipeline that tries models in waterfall order."""
     prompt = build_user_prompt(idea, config)
+    estimated_input_tokens = len(prompt) // 4
     last_exc: Exception | None = None
-    for model_id, model_name, max_tokens in GROQ_MODEL_WATERFALL:
+
+    for model_id, model_name, max_tokens, tpm_limit in GROQ_MODEL_WATERFALL:
+        # Check if the input size itself exceeds the total model TPM capacity
+        if estimated_input_tokens >= tpm_limit:
+            print(f"[INFO] Proactively skipping {model_name} (input size {estimated_input_tokens} >= limit {tpm_limit})")
+            continue
+
+        # Dynamic max_tokens capping logic
+        min_usable_output = 2000
+        active_max_tokens = max_tokens
+        if estimated_input_tokens + max_tokens > tpm_limit:
+            remaining_budget = tpm_limit - estimated_input_tokens
+            if remaining_budget < min_usable_output:
+                print(f"[INFO] Proactively skipping {model_name} (remaining output budget {remaining_budget} is below minimum {min_usable_output})")
+                continue
+            active_max_tokens = remaining_budget
+            print(f"[INFO] Dynamically capping max_tokens for {model_name} from {max_tokens} to {active_max_tokens} to fit inside {tpm_limit} TPM limit")
+
+        estimated_total_tokens = estimated_input_tokens + active_max_tokens
+
+        # 2. In-memory local cooldown check
+        if _is_in_memory_blocked(model_id):
+            print(f"[INFO] Proactively skipping {model_name} (in-memory block from recent rate limit)")
+            continue
+
+        # 3. Redis concurrent usage check
+        current_usage = await _get_model_token_usage(model_id)
+        if current_usage + estimated_total_tokens > tpm_limit:
+            print(f"[INFO] Proactively skipping {model_name} (Redis tracker usage {current_usage} + estimated {estimated_total_tokens} > limit {tpm_limit})")
+            continue
+
         try:
-            print(f"[INFO] Trying model: {model_name} ({model_id}, max_tokens={max_tokens})")
-            return await _call_model_async(prompt, BLUEPRINT_SYSTEM_PROMPT, model_id, max_tokens)
+            print(f"[INFO] Trying model: {model_name} ({model_id}, max_tokens={active_max_tokens})")
+            result = await _call_model_async(prompt, BLUEPRINT_SYSTEM_PROMPT, model_id, active_max_tokens)
+            # Success — log token usage to Redis
+            await _incr_model_token_usage(model_id, estimated_total_tokens)
+            return result
         except Exception as exc:
             if _should_try_next_model(exc):
                 print(f"[WARN] {model_name} unavailable ({exc}), falling back to next model.")
+                _mark_in_memory_blocked(model_id)
+                await _mark_model_rate_limited(model_id, tpm_limit)
                 last_exc = exc
                 continue
             raise
@@ -110,6 +205,7 @@ async def run_generator_pipeline_stream(
     JSON-mode-not-supported errors, emitting a fresh "model" event each time.
     """
     prompt = build_user_prompt(idea, config)
+    estimated_input_tokens = len(prompt) // 4
     client = _get_async_client()
     messages = [
         {"role": "system", "content": BLUEPRINT_SYSTEM_PROMPT},
@@ -117,16 +213,45 @@ async def run_generator_pipeline_stream(
     ]
 
     last_exc: Exception | None = None
-    for model_id, model_name, max_tokens in GROQ_MODEL_WATERFALL:
+    for model_id, model_name, max_tokens, tpm_limit in GROQ_MODEL_WATERFALL:
+        # Check if the input size itself exceeds the total model TPM capacity
+        if estimated_input_tokens >= tpm_limit:
+            print(f"[INFO] Proactively skipping {model_name} (input size {estimated_input_tokens} >= limit {tpm_limit})")
+            continue
+
+        # Dynamic max_tokens capping logic
+        min_usable_output = 2000
+        active_max_tokens = max_tokens
+        if estimated_input_tokens + max_tokens > tpm_limit:
+            remaining_budget = tpm_limit - estimated_input_tokens
+            if remaining_budget < min_usable_output:
+                print(f"[INFO] Proactively skipping {model_name} (remaining output budget {remaining_budget} is below minimum {min_usable_output})")
+                continue
+            active_max_tokens = remaining_budget
+            print(f"[INFO] Dynamically capping max_tokens for {model_name} from {max_tokens} to {active_max_tokens} to fit inside {tpm_limit} TPM limit")
+
+        estimated_total_tokens = estimated_input_tokens + active_max_tokens
+
+        # 2. In-memory local cooldown check
+        if _is_in_memory_blocked(model_id):
+            print(f"[INFO] Proactively skipping {model_name} (in-memory block from recent rate limit)")
+            continue
+
+        # 3. Redis concurrent usage check
+        current_usage = await _get_model_token_usage(model_id)
+        if current_usage + estimated_total_tokens > tpm_limit:
+            print(f"[INFO] Proactively skipping {model_name} (Redis tracker usage {current_usage} + estimated {estimated_total_tokens} > limit {tpm_limit})")
+            continue
+
         try:
-            print(f"[INFO] Streaming with model: {model_name} ({model_id}, max_tokens={max_tokens})")
+            print(f"[INFO] Streaming with model: {model_name} ({model_id}, max_tokens={active_max_tokens})")
             yield ("model", model_name)
 
             kwargs: dict = dict(
                 model=model_id,
                 messages=messages,
                 temperature=0.3,
-                max_tokens=max_tokens,
+                max_tokens=active_max_tokens,
                 timeout=120,
                 stream=True,
             )
@@ -138,11 +263,15 @@ async def run_generator_pipeline_stream(
                 content = chunk.choices[0].delta.content or ""
                 if content:
                     yield ("chunk", content)
-            # Stream completed successfully — stop waterfall
+            
+            # Stream completed successfully — log token usage and stop waterfall
+            await _incr_model_token_usage(model_id, estimated_total_tokens)
             return
         except Exception as exc:
             if _should_try_next_model(exc):
                 print(f"[WARN] {model_name} unavailable ({exc}), falling back to next model.")
+                _mark_in_memory_blocked(model_id)
+                await _mark_model_rate_limited(model_id, tpm_limit)
                 last_exc = exc
                 continue
             raise
