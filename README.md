@@ -193,10 +193,15 @@ forge-ai/
 
 ---
 
-## Notes on the AI Layer
+## Notes on the AI Layer & System Design
 
-- **Groq JSON Mode**: The blueprint call uses Groq JSON mode (`response_format={"type": "json_object"}`) so it reliably returns structured JSON matching the schema in `system_prompt.py` — no markdown fences to strip.
-- **Asynchronous LLM Calls**: The two interactive generators (SQL & code snippet) are async and run in separate, smaller, optimized prompts (not the full blueprint call) — they only see the relevant slice (the database schema, or a single endpoint spec), which keeps output focused, fast, and cheap.
-- **SSL Handshake Handling**: Integrated `certifi` CA validation to prevent TLS handshakes dropping on Windows clients during MongoDB connection startup.
-- **GPU Canvas Rendering Performance**: The About page scroll-rendering algorithm uses frame index comparisons to skip canvas clear and image redraw operations when scroll position is idle, saving resource consumption.
-- **Client-Side Email Form Dispatch**: The Contact page integrates secure EmailJS templates, preventing storing SMTP credentials on host configuration files.
+- **Groq JSON Mode**: The blueprint generation utilizes Groq JSON mode (`response_format={"type": "json_object"}`) to guarantee structured, easily parseable JSON outputs matching the backend Pydantic expectations.
+- **Asynchronous LLM Calls**: The Database SQL and API Code snippet generators run inside small, async prompts, focusing context windows only on the relevant segments to maximize generation speed and minimize token costs.
+- **Strict JSON Prompt Guidelines**: The system prompt enforces strict JSON formatting rules (e.g. banning escaped single quotes `\'` in string enums) to prevent Groq API validator schema rejections.
+- **Event-Loop Safe Caching**: Upgraded the rate limiter middleware to use `redis.asyncio` (async pipeline executions) when deployed with Docker Compose, eliminating event-loop blockages and supporting scalable multi-worker backend containers.
+- **SSL Handshake Handling**: Integrated `certifi` CA validation to trust TLS certificates and prevent MongoDB Atlas connection dropouts on local Windows and container runtimes.
+- **Dynamic IP Whitelisting**: Handled Atlas database firewall drops by whitelisting rotating ISP blocks (`157.51.0.0/16` or `0.0.0.0/0`) dynamically.
+- **Secure Build-Time Configs**: Restored `.env` exclusions in `.dockerignore` to secure image layers from credentials baking, passing parameters (like EmailJS IDs) securely as Docker build arguments.
+- **GPU Caching Scroll Animations**: Canvas drawings inside `About.tsx` cache the active frame index (`lastDrawnFrameIndex`) to skip redrawing layers when the scroll position is stationary, drastically reducing CPU/GPU overhead.
+- **Terms & Conditions React Modal**: Replaced standard alert boxes with an inline React Modal in `Auth.tsx` complete with body scroll locking and account creation validation checks.
+- **Interactive Flying Particles**: Features a canvas-based particle physics loop generating subtle, interactive background visuals in the **Contact** page and the **Generator** page.
