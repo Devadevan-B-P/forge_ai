@@ -22,6 +22,10 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        - VITE_EMAILJS_SERVICE_ID=${VITE_EMAILJS_SERVICE_ID}
+        - VITE_EMAILJS_TEMPLATE_ID=${VITE_EMAILJS_TEMPLATE_ID}
+        - VITE_EMAILJS_PUBLIC_KEY=${VITE_EMAILJS_PUBLIC_KEY}
     container_name: forge_ai_frontend
     restart: unless-stopped
     depends_on:

@@ -8,8 +8,8 @@ from app.core.config import settings
 _redis_client = None
 if settings.redis_url:
     try:
-        import redis
-        _redis_client = redis.from_url(settings.redis_url, decode_responses=True)
+        import redis.asyncio as aioredis
+        _redis_client = aioredis.from_url(settings.redis_url, decode_responses=True)
     except Exception as e:
         print(f"[WARN] Failed to initialize Redis rate-limiter: {e}. Falling back to in-memory.")
 
@@ -49,10 +49,10 @@ class SecurityMiddleware:
             try:
                 # Key format: ratelimit:{ip}:{auth/general}
                 key = f"ratelimit:{client_ip}:{'auth' if is_auth else 'general'}"
-                pipe = _redis_client.pipeline()
-                pipe.incr(key)
-                pipe.expire(key, self.limit_period, nx=True)
-                results = pipe.execute()
+                async with _redis_client.pipeline(transaction=True) as pipe:
+                    pipe.incr(key)
+                    pipe.expire(key, self.limit_period, nx=True)
+                    results = await pipe.execute()
                 current_requests = results[0]
                 
                 if current_requests > limit:
