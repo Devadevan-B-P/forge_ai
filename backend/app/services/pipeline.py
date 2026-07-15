@@ -260,11 +260,33 @@ Return ONLY the raw JSON object. No markdown, no preambles.
 
 
 def _is_rate_limit_error(exc: Exception) -> bool:
-    """Return True for any rate-limit / quota-exceeded error from Groq."""
-    if isinstance(exc, groq_sdk.RateLimitError):
+    """Return True for any rate-limit, quota, or token-capacity error from Groq.
+
+    Groq returns:
+      - HTTP 429 (groq_sdk.RateLimitError) for standard rate limits
+      - HTTP 413 for "Request too large" (prompt exceeds model's TPM window)
+    Both should trigger the model waterfall fallback.
+    """
+    # Typed SDK exceptions
+    if isinstance(exc, (groq_sdk.RateLimitError,)):
         return True
+    # Some SDK versions surface 413 as a generic APIStatusError
+    if isinstance(exc, groq_sdk.APIStatusError) and exc.status_code in (413, 429):
+        return True
+    # String-based fallback for any wrapper exceptions
     msg = str(exc).lower()
-    return "rate limit" in msg or "429" in msg or "too many requests" in msg or "quota" in msg
+    return (
+        "rate limit" in msg
+        or "429" in msg
+        or "413" in msg
+        or "too many requests" in msg
+        or "request too large" in msg
+        or "tokens per minute" in msg
+        or "tpm" in msg
+        or "quota" in msg
+        or "reduce your message size" in msg
+    )
+
 
 
 async def _call_model_async(prompt: str, system_role: str, model_id: str) -> dict:
