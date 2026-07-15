@@ -6,12 +6,12 @@ FROM node:20-slim AS builder
 WORKDIR /app
 
 # Copy dependency files to cache layer
-COPY package.json yarn.lock ./
-RUN yarn install --frozen-lockfile
+COPY package.json package-lock.json ./
+RUN npm ci
 
 # Copy codebase files
 COPY . .
-RUN yarn build
+RUN npm run build
 
 # ==========================================
 # STAGE 2: Serve the static bundle via Nginx

@@ -7,22 +7,25 @@
 **/.venv/
 **/env/
 **/ENV/
-backend/.env
-backend/.env.*
+# Environment variables (exclude real env configurations at any level)
+.env
+.env.*
 !backend/.env.example
+!frontend/.env.example
 
 # Node/React (Frontend)
 **/node_modules/
 **/dist/
-frontend/.env
-frontend/.env.*
-!frontend/.env.example
 **/*.tsbuildinfo
 .vite/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Lockfiles (we standardise on npm, so ignore other lockfiles)
 yarn.lock
+pnpm-lock.yaml
+pnpm-workspace.yaml
 
 # Databases
 **/*.db
