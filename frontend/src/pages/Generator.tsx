@@ -206,6 +206,7 @@ export default function Generator() {
   const typingTimeoutRef = useRef<number | null>(null);
   const outputRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -289,6 +290,11 @@ export default function Generator() {
   }, []);
 
   const handleSelectHistory = async (id: string) => {
+    // Terminate any running active generation stream
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -308,6 +314,11 @@ export default function Generator() {
   };
 
   const handleNewProject = () => {
+    // Terminate any running active generation stream
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
     setActiveHistoryId(null);
     setIdea("");
     setBlueprint(null);
@@ -362,6 +373,13 @@ export default function Generator() {
       setError("Describe your application idea first.");
       return;
     }
+
+    // Terminate any running active generation stream
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+
     setLoading(true);
     setError(null);
     setBlueprint(null);
@@ -384,6 +402,7 @@ export default function Generator() {
           config,
           history_id: isRegenerate ? activeHistoryId : null,
         }),
+        signal: abortControllerRef.current.signal,
       });
 
       if (!response.ok) {
@@ -437,8 +456,13 @@ export default function Generator() {
       const updatedHistory = await fetchHistory();
       setHistory(updatedHistory);
     } catch (e: any) {
+      if (e.name === "AbortError") {
+        console.log("Generation request aborted.");
+        return;
+      }
       setError(getFriendlyErrorMessage(e.message || ""));
     } finally {
+      abortControllerRef.current = null;
       setLoading(false);
     }
   };
@@ -649,11 +673,11 @@ export default function Generator() {
       {/* Grain overlay */}
       <div className="grain-overlay fixed inset-0 z-0 pointer-events-none opacity-[0.03]" />
 
-      {/* Content wrapper with pageEnter transition animation */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 page-enter">
+      {/* Content wrapper without pageEnter to allow native position: sticky on children */}
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         {/* ── Top Navigation ── */}
-        <header className="flex items-center justify-between mb-12">
+        <header className="flex items-center justify-between mb-12 page-enter">
           <Link to="/" className="flex items-center gap-2.5 group">
             <div
               className="w-8 h-8 rounded-lg flex items-center justify-center"
@@ -690,7 +714,7 @@ export default function Generator() {
         {/* Sidebar + Main Content Flex Layout */}
         <div className="flex flex-col lg:flex-row gap-8 items-start w-full">
           {/* LEFT SIDEBAR: Chat History */}
-          <aside className="w-full lg:w-64 shrink-0 rounded-2xl p-5 flex flex-col gap-4 bg-[#0E1014] border border-[#22252B] relative z-20">
+          <aside className="w-full lg:w-64 shrink-0 rounded-2xl p-5 flex flex-col gap-4 bg-[#0E1014] border border-[#22252B] relative z-20 page-enter">
             <div>
               <h3 className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "#5FA9FF" }}>
                 Projects History
@@ -780,7 +804,7 @@ export default function Generator() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start mb-8">
 
           {/* Left: Input + Config */}
-          <div className="lg:col-span-2 flex flex-col gap-5">
+          <div className="lg:col-span-2 flex flex-col gap-5 page-enter">
 
             {/* Idea textarea */}
             <div
