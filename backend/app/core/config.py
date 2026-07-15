@@ -7,7 +7,7 @@ from typing import List
 # Each tuple: (model_id, human_readable_name)
 GROQ_MODEL_WATERFALL: List[tuple] = [
     ("qwen/qwen3-32b",          "Qwen3 32B"),
-    ("openai/gpt-4o-mini",      "GPT-4o Mini"),
+    ("openai/gpt-oss-120b",     "GPT-OSS 120B"),
     ("llama-3.3-70b-versatile", "Llama 3.3 70B"),
 ]
 
