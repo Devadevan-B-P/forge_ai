@@ -83,6 +83,66 @@ function getFriendlyErrorMessage(msg: string): string {
   return msg || "Unable to contact the AI service. Please try again in a few moments.";
 }
 
+const extractProductName = (ideaStr: string): string => {
+  if (!ideaStr) return "Application Blueprint";
+
+  // 1. Try to match explicit Application Name / Project Name patterns (including multiline and colons)
+  const nameMatch = ideaStr.match(/(?:Application Name|Project Name|App Name)\s*:?\s*\n*\s*([^\n\r#•*]+)/i);
+  if (nameMatch && nameMatch[1].trim()) {
+    const candidate = nameMatch[1].trim();
+    if (candidate.length > 0 && candidate.length < 60) {
+      return candidate;
+    }
+  }
+
+  // 2. Clean up common system instruction headers to find the actual concept
+  let clean = ideaStr.trim();
+  
+  // Strip common meta-instruction headers
+  clean = clean.replace(/^(?:You are|Generate|Please generate|Create|Build)\b[\s\S]*?(?:for the following application:|for this application:|description:|concept:)/i, "");
+  clean = clean.replace(/^(?:You are|Generate|Please generate|Create|Build)\b[\s\S]*?(?=(?:Application Name:|Project Name:|App Name:))/i, "");
+  clean = clean.trim();
+
+  // If the cleaning left nothing or we still have instructions, fallback to original
+  if (!clean) {
+    clean = ideaStr.trim();
+  }
+
+  // Check nameMatch again on the cleaned text in case it was further down
+  const cleanNameMatch = clean.match(/(?:Application Name|Project Name|App Name|Name)\s*:?\s*\n*\s*([^\n\r#•*]+)/i);
+  if (cleanNameMatch && cleanNameMatch[1].trim()) {
+    const candidate = cleanNameMatch[1].trim();
+    if (candidate.length > 0 && candidate.length < 60) {
+      return candidate;
+    }
+  }
+
+  // 3. Try splitter rules on the cleaned text
+  const splitters = [" - ", " : ", " similar ", " like ", " where ", " to ", " that ", " for "];
+  for (const splitter of splitters) {
+    const idx = clean.toLowerCase().indexOf(splitter);
+    if (idx > 0) {
+      const part = clean.slice(0, idx).trim();
+      // Verify it's a reasonable name length and doesn't contain prompt words
+      if (part.length > 2 && part.length < 60 && !part.toLowerCase().includes("you are") && !part.toLowerCase().includes("generate")) {
+        return part.charAt(0).toUpperCase() + part.slice(1);
+      }
+    }
+  }
+
+  // 4. Word-based fallback from the cleaned text
+  const words = clean
+    .replace(/[#*•_]/g, "")
+    .split(/\s+/)
+    .filter(w => w.length > 0 && !["you", "are", "generate", "complete", "enterprise-grade", "the", "a", "an"].includes(w.toLowerCase()));
+  
+  const fallback = words.slice(0, Math.min(5, words.length)).join(" ");
+  if (fallback) {
+    return fallback.charAt(0).toUpperCase() + fallback.slice(1);
+  }
+  return "Application Blueprint";
+};
+
 const DEFAULT_CONFIG: BlueprintConfig = {
   architectureStyle: "Monolithic",
   database: "PostgreSQL",
@@ -543,18 +603,6 @@ export default function Generator() {
       y += 1.5;
     };
 
-    const extractProductName = (ideaStr: string) => {
-      const clean = ideaStr.trim();
-      const splitters = [" where ", " to ", " that ", " for "];
-      for (const splitter of splitters) {
-        const idx = clean.toLowerCase().indexOf(splitter);
-        if (idx > 0) { const part = clean.slice(0, idx).trim(); return part.charAt(0).toUpperCase() + part.slice(1); }
-      }
-      const words = clean.split(" ");
-      const fallback = words.slice(0, Math.min(5, words.length)).join(" ");
-      return fallback.charAt(0).toUpperCase() + fallback.slice(1);
-    };
-
     const productName = extractProductName(idea);
 
     addText("PRODUCT SPECIFICATION & REQUIREMENTS (PRD)", 9, true, "#7c3aed");
@@ -764,7 +812,7 @@ export default function Generator() {
                       <div className="flex items-center gap-2 min-w-0 flex-1">
                         <FolderCode size={13} className={isActive ? "text-[#5FA9FF]" : "text-[#9CA3AF]"} />
                         <span className="text-[11px] font-medium truncate flex-1 leading-tight">
-                          {item.idea}
+                          {extractProductName(item.idea)}
                         </span>
                       </div>
                       <button
