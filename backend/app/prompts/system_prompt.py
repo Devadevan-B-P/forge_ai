@@ -6,6 +6,11 @@ To fit within a strict 3,500 token limit:
 - Keep all 5 Mermaid diagrams extremely compact, simple, and containing less than 12 lines of code each.
 - Do not add preambles, commentary, or markdown code blocks. Return ONLY the raw JSON object.
 
+CRITICAL JSON RULES:
+1. The output must be strictly valid JSON.
+2. NEVER use escaped single quotes (`\'`) in JSON strings. If you write an ENUM or standard type, write it as `ENUM('instructor', 'student', 'admin')` using raw single quotes `'` without any backslashes. Escaped single quotes `\'` are syntax violations in JSON and will crash the validator.
+3. Ensure all double quotes inside string values are properly escaped as `\"`.
+
 JSON Schema:
 {
   "promptAnalysis": {
