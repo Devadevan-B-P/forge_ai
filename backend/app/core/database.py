@@ -1,4 +1,5 @@
 import urllib.parse
+import certifi
 from motor.motor_asyncio import AsyncIOMotorClient
 from app.core.config import settings
 
@@ -50,7 +51,11 @@ async def connect_db():
     cleaned_uri = clean_mongodb_uri(settings.mongodb_uri)
 
     try:
-        _client = AsyncIOMotorClient(cleaned_uri, serverSelectionTimeoutMS=5000)
+        _client = AsyncIOMotorClient(
+            cleaned_uri,
+            serverSelectionTimeoutMS=5000,
+            tlsCAFile=certifi.where()
+        )
         # Verify the connection is alive
         await _client.admin.command("ping")
         print("[OK] Connected to MongoDB Atlas")

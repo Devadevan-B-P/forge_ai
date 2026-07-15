@@ -24,7 +24,13 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class UserResponse(BaseModel):
+    id: str
+    email: EmailStr
+    name: str = ""
+
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
-    user: dict
+    user: UserResponse

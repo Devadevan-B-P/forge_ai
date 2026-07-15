@@ -75,8 +75,8 @@ async def get_current_user(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload.")
 
     db = get_db()
-    user = await db["users"].find_one({"_id": user_id})
+    user = await db["users"].find_one({"_id": user_id}, {"password_hash": 0})
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found.")
 
-    return {"id": user_id, "email": payload.get("email")}
+    return {"id": user_id, "email": user.get("email"), "name": user.get("name", "")}

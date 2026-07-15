@@ -10,7 +10,7 @@ from app.core.security import (
     hash_password,
     verify_password,
 )
-from app.schemas.auth import LoginRequest, SignupRequest, TokenResponse
+from app.schemas.auth import LoginRequest, SignupRequest, TokenResponse, UserResponse
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -87,6 +87,6 @@ async def login(body: LoginRequest):
 # ─────────────────────────────────────────
 # GET /api/auth/me
 # ─────────────────────────────────────────
-@router.get("/me")
+@router.get("/me", response_model=UserResponse)
 async def me(current_user: dict = Depends(get_current_user)):
     return current_user
