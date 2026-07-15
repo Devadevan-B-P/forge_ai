@@ -518,17 +518,11 @@ export default function Generator() {
         className="fixed inset-0 w-full h-full pointer-events-none z-0"
       />
 
-      {/* Ambient glow blobs */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className="absolute rounded-full blur-[160px] opacity-[0.05]" style={{ width: 600, height: 600, background: "#5FA9FF", top: "-10%", left: "30%" }} />
-        <div className="absolute rounded-full blur-[120px] opacity-[0.04]" style={{ width: 400, height: 400, background: "#3B82F6", bottom: "5%", right: "10%" }} />
-      </div>
-
       {/* Grain overlay */}
       <div className="grain-overlay fixed inset-0 z-0 pointer-events-none opacity-[0.03]" />
 
       <div
-        className="relative min-h-screen bg-[#050505] text-white overflow-x-hidden page-enter"
+        className="relative min-h-screen bg-[#000000] text-white overflow-x-hidden page-enter"
         style={{ fontFamily: "'Inter', sans-serif" }}
       >
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
