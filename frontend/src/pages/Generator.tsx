@@ -21,6 +21,54 @@ import type { Blueprint, BlueprintConfig } from "../types/blueprint";
 import { jsPDF } from "jspdf";
 import { useAuth } from "../hooks/useAuth";
 
+function parsePartialJson(partialJson: string) {
+  const jsonStr = partialJson.trim();
+  if (!jsonStr) return null;
+
+  let stack: string[] = [];
+  let inString = false;
+  let escaping = false;
+
+  for (let i = 0; i < jsonStr.length; i++) {
+    const char = jsonStr[i];
+    if (escaping) {
+      escaping = false;
+      continue;
+    }
+    if (char === '\\') {
+      escaping = true;
+      continue;
+    }
+    if (char === '"') {
+      inString = !inString;
+      continue;
+    }
+    if (inString) continue;
+
+    if (char === '{') {
+      stack.push('}');
+    } else if (char === '[') {
+      stack.push(']');
+    } else if (char === '}' || char === ']') {
+      if (stack.length > 0 && stack[stack.length - 1] === char) {
+        stack.pop();
+      }
+    }
+  }
+
+  let closedJson = jsonStr;
+  if (inString) closedJson += '"';
+  while (stack.length > 0) {
+    closedJson += stack.pop();
+  }
+
+  try {
+    return JSON.parse(closedJson);
+  } catch (e) {
+    return null;
+  }
+}
+
 const DEFAULT_CONFIG: BlueprintConfig = {
   architectureStyle: "Monolithic",
   database: "PostgreSQL",
@@ -301,18 +349,80 @@ export default function Generator() {
     }
     setLoading(true);
     setError(null);
+    setBlueprint(null);
+    setCachedSql(null);
+    setCachedApiCodes({});
+
+    // Scroll to loader section immediately to show the loading screen/progress
+    setTimeout(() => outputRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+
     try {
-      const res = await generateBlueprint(idea, config, isRegenerate ? activeHistoryId : null);
-      setBlueprint(res.blueprint);
-      setActiveHistoryId(res.id);
-      setCachedSql(null);
-      setCachedApiCodes({});
-      // Refresh history list
+      const token = localStorage.getItem("forge_ai_token");
+      const response = await fetch("/api/blueprint/generate-stream", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          idea,
+          config,
+          history_id: isRegenerate ? activeHistoryId : null,
+        }),
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.detail || "Failed to start blueprint streaming.");
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error("No response streaming reader available.");
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let accumulatedText = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed.startsWith("data: ")) continue;
+
+          const jsonStr = trimmed.slice(6);
+          try {
+            const parsed = JSON.parse(jsonStr);
+            if (parsed.type === "chunk") {
+              accumulatedText += parsed.text;
+              const partialBp = parsePartialJson(accumulatedText);
+              if (partialBp) {
+                setBlueprint(partialBp as any);
+              }
+            } else if (parsed.type === "done") {
+              setBlueprint(parsed.blueprint);
+              setActiveHistoryId(parsed.id);
+            } else if (parsed.type === "error") {
+              throw new Error(parsed.message);
+            }
+          } catch (e) {
+            // Ignore minor chunk decoding errors
+          }
+        }
+      }
+
+      // Refresh history list upon completion
       const updatedHistory = await fetchHistory();
       setHistory(updatedHistory);
-      setTimeout(() => outputRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
     } catch (e: any) {
-      setError(getErrorMessage(e, "Failed to generate blueprint."));
+      setError(e.message || "Failed to generate blueprint.");
     } finally {
       setLoading(false);
     }
@@ -511,7 +621,10 @@ export default function Generator() {
   const simulatedStack = getSimulatedStack(idea, config);
 
   return (
-    <>
+    <div
+      className="relative min-h-screen bg-[#000000] text-white overflow-x-hidden"
+      style={{ fontFamily: "'Inter', sans-serif" }}
+    >
       {/* Particle background */}
       <canvas
         ref={canvasRef}
@@ -521,11 +634,8 @@ export default function Generator() {
       {/* Grain overlay */}
       <div className="grain-overlay fixed inset-0 z-0 pointer-events-none opacity-[0.03]" />
 
-      <div
-        className="relative min-h-screen bg-[#000000] text-white overflow-x-hidden page-enter"
-        style={{ fontFamily: "'Inter', sans-serif" }}
-      >
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Content wrapper with pageEnter transition animation */}
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 page-enter">
 
         {/* ── Top Navigation ── */}
         <header className="flex items-center justify-between mb-12">
@@ -839,10 +949,79 @@ export default function Generator() {
 
         {/* ── Blueprint Output ── */}
         <div ref={outputRef} className="scroll-mt-8">
+          {loading && !blueprint && (
+            <div className="glass rounded-2xl border border-[#22252B] p-8 flex flex-col gap-8 mb-8">
+              {/* Heading */}
+              <div className="flex items-center justify-between pb-4 border-b border-border/40">
+                <div className="flex items-center gap-3">
+                  <Loader2 className="animate-spin text-[#5FA9FF]" size={20} />
+                  <div>
+                    <h3 className="text-sm font-semibold text-white">Architecting System...</h3>
+                    <p className="text-[10px] text-slate-400">Please wait while the AI models design your solution</p>
+                  </div>
+                </div>
+                <span className="text-[10px] bg-[#5FA9FF]/10 text-[#5FA9FF] border border-[#5FA9FF]/20 px-2 py-0.5 rounded-full font-mono font-medium animate-pulse">
+                  {Math.round(((stepIndex + 1) / GENERATION_STEPS.length) * 100)}%
+                </span>
+              </div>
+
+              {/* Progress bar */}
+              <div className="h-1.5 w-full bg-[#22252B] rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-[#5FA9FF] to-[#3B82F6] transition-all duration-500 rounded-full"
+                  style={{ width: `${((stepIndex + 1) / GENERATION_STEPS.length) * 100}%` }}
+                />
+              </div>
+
+              {/* Steps progression checklist */}
+              <div className="grid sm:grid-cols-2 gap-4">
+                {GENERATION_STEPS.map((step, idx) => {
+                  const isCompleted = idx < stepIndex;
+                  const isActive = idx === stepIndex;
+                  return (
+                    <div
+                      key={step}
+                      className={`flex items-center gap-3 p-3.5 rounded-xl border transition-all duration-300 ${
+                        isCompleted
+                          ? "bg-[#3DD9A4]/5 border-[#3DD9A4]/20 text-slate-300"
+                          : isActive
+                          ? "bg-[#5FA9FF]/5 border-[#5FA9FF]/30 text-white shadow-[0_0_15px_rgba(95,169,255,0.06)] animate-pulse"
+                          : "bg-white/[0.01] border-white/5 text-slate-500"
+                      }`}
+                    >
+                      {isCompleted ? (
+                        <div className="w-4 h-4 rounded-full bg-[#3DD9A4] flex items-center justify-center text-[#050505] text-[10px] font-bold">✓</div>
+                      ) : isActive ? (
+                        <Loader2 className="animate-spin text-[#5FA9FF]" size={14} />
+                      ) : (
+                        <div className="w-4 h-4 rounded-full border border-white/10" />
+                      )}
+                      <span className="text-xs font-medium font-sans">{step}</span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Skeleton Cards */}
+              <div className="space-y-4 pt-4 border-t border-border/40">
+                <div className="h-4 bg-white/10 rounded w-1/4 animate-pulse" />
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="h-24 bg-white/5 rounded-xl border border-white/5 animate-pulse" />
+                  <div className="h-24 bg-white/5 rounded-xl border border-white/5 animate-pulse" />
+                  <div className="h-24 bg-white/5 rounded-xl border border-white/5 animate-pulse" />
+                </div>
+                <div className="space-y-2">
+                  <div className="h-3 bg-white/5 rounded w-5/6 animate-pulse" />
+                  <div className="h-3 bg-white/5 rounded w-4/6 animate-pulse" />
+                </div>
+              </div>
+            </div>
+          )}
+
           {blueprint && (
             <FadeContent blur={true} duration={1000} ease="power2.out" initialOpacity={0}>
               <div
-                className="rounded-2xl overflow-hidden"
+                className="rounded-2xl overflow-hidden mb-8"
                 style={{ border: "1px solid #22252B" }}
               >
                 {/* Output header */}
@@ -851,8 +1030,14 @@ export default function Generator() {
                   style={{ background: "#0E1014", borderBottom: "1px solid #22252B" }}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 rounded-full bg-[#3DD9A4]" />
-                    <p className="text-sm font-medium text-white">Blueprint Generated</p>
+                    {loading ? (
+                      <Loader2 className="animate-spin text-[#5FA9FF]" size={14} />
+                    ) : (
+                      <div className="w-2 h-2 rounded-full bg-[#3DD9A4]" />
+                    )}
+                    <p className="text-sm font-medium text-white">
+                      {loading ? "Streaming blueprint..." : "Blueprint Generated"}
+                    </p>
                   </div>
                   <div className="flex flex-wrap gap-1.5 max-w-[60%] justify-end">
                     {Object.values(config).map((v) => (
@@ -906,6 +1091,5 @@ export default function Generator() {
         )}
       </div>
     </div>
-    </>
   );
 }

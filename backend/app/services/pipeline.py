@@ -310,3 +310,25 @@ async def run_generator_pipeline(idea: str, config: dict) -> dict:
     prompt = build_user_prompt(idea, config)
     result = await _call_groq_async_with_retry(prompt, BLUEPRINT_SYSTEM_PROMPT)
     return result
+
+
+async def run_generator_pipeline_stream(idea: str, config: dict):
+    prompt = build_user_prompt(idea, config)
+    client = _get_async_client()
+    messages = [
+        {"role": "system", "content": BLUEPRINT_SYSTEM_PROMPT},
+        {"role": "user", "content": prompt}
+    ]
+    response_stream = await client.chat.completions.create(
+        model=settings.groq_model,
+        messages=messages,
+        temperature=0.3,
+        response_format={"type": "json_object"},
+        max_tokens=4096,
+        timeout=60,
+        stream=True
+    )
+    async for chunk in response_stream:
+        content = chunk.choices[0].delta.content or ""
+        if content:
+            yield content

@@ -1,4 +1,4 @@
-import { useState, Dispatch, SetStateAction } from "react";
+import { useState, useEffect, Dispatch, SetStateAction } from "react";
 import type { Blueprint, BlueprintConfig } from "../types/blueprint";
 import {
   OverviewTab,
@@ -53,10 +53,51 @@ export default function OutputTabs({
 }) {
   const [active, setActive] = useState<(typeof TABS)[number]>("Prompt Analysis");
 
+  const visibleTabs = TABS.filter((t) => {
+    switch (t) {
+      case "Prompt Analysis":
+        return !!(bp.promptAnalysis && bp.decisions);
+      case "PRD":
+        return !!bp.prd;
+      case "Overview":
+        return !!bp.overview;
+      case "Features":
+        return !!bp.features;
+      case "Tech Stack":
+        return !!bp.techStack;
+      case "Database":
+        return !!bp.database;
+      case "API":
+        return !!bp.apis;
+      case "Folder":
+        return !!bp.folderStructure;
+      case "AWS":
+        return !!bp.awsArchitecture;
+      case "Docker":
+        return !!bp.dockerArchitecture;
+      case "Timeline":
+        return !!bp.timeline;
+      case "Security":
+        return !!bp.security;
+      case "AI Recommendations":
+        return !!bp.aiRecommendations;
+      case "Mermaid Diagrams":
+        return !!bp.mermaid;
+      default:
+        return false;
+    }
+  }) as unknown as typeof TABS;
+
+  useEffect(() => {
+    if (visibleTabs.length > 0 && !visibleTabs.includes(active)) {
+      setActive(visibleTabs[0]);
+    }
+  }, [visibleTabs, active]);
+
   return (
     <div className="glass rounded-2xl overflow-hidden">
       <div className="flex overflow-x-auto border-b border-border">
-        {TABS.map((t) => (
+        {visibleTabs.map((t) => (
           <button
             key={t}
             onClick={() => setActive(t)}

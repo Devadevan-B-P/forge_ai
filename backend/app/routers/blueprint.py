@@ -3,11 +3,12 @@ import uuid
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 
 from app.core.security import get_current_user
 from app.core.database import get_db
 from app.schemas.blueprint import BlueprintRequest
-from app.services.pipeline import run_generator_pipeline
+from app.services.pipeline import run_generator_pipeline, run_generator_pipeline_stream
 
 router = APIRouter(prefix="/api/blueprint", tags=["blueprint"])
 
@@ -70,3 +71,63 @@ async def generate(req: BlueprintRequest, current_user: dict = Depends(get_curre
                 detail="The AI model took too long to respond. Please try again in a moment.",
             )
         raise HTTPException(status_code=502, detail=f"Blueprint generation failed: {msg}")
+
+
+@router.post("/generate-stream")
+async def generate_stream(req: BlueprintRequest, current_user: dict = Depends(get_current_user)):
+    async def sse_generator():
+        accumulated_text = ""
+        try:
+            async for chunk in run_generator_pipeline_stream(req.idea, req.config.model_dump()):
+                accumulated_text += chunk
+                chunk_payload = json.dumps({'type': 'chunk', 'text': chunk})
+                yield f"data: {chunk_payload}\n\n"
+            
+            # Parse completed stream to JSON
+            try:
+                result = json.loads(accumulated_text.strip())
+            except json.JSONDecodeError:
+                err_payload = json.dumps({'type': 'error', 'message': "The model returned output that wasn't valid JSON. Please try again."})
+                yield f"data: {err_payload}\n\n"
+                return
+
+            db = get_db()
+            if req.history_id:
+                res = await db["history"].update_one(
+                    {"_id": req.history_id, "user_id": current_user["id"]},
+                    {"$set": {
+                        "idea": req.idea,
+                        "config": req.config.model_dump(),
+                        "blueprint": result,
+                        "created_at": datetime.now(timezone.utc),
+                        "cachedSql": None,
+                        "cachedApiCodes": {}
+                    }}
+                )
+                if res.matched_count == 0:
+                    yield f"data: {json.dumps({'type': 'error', 'message': 'History project not found.'})}\n\n"
+                    return
+                history_id = req.history_id
+            else:
+                history_id = str(uuid.uuid4())
+                doc = {
+                    "_id": history_id,
+                    "user_id": current_user["id"],
+                    "idea": req.idea,
+                    "config": req.config.model_dump(),
+                    "blueprint": result,
+                    "created_at": datetime.now(timezone.utc),
+                    "cachedSql": None,
+                    "cachedApiCodes": {}
+                }
+                await db["history"].insert_one(doc)
+
+            # Yield completion event with the history id and blueprint
+            done_payload = json.dumps({'type': 'done', 'id': history_id, 'blueprint': result})
+            yield f"data: {done_payload}\n\n"
+
+        except Exception as e:
+            err_msg_payload = json.dumps({'type': 'error', 'message': f"Blueprint generation failed: {str(e)}"})
+            yield f"data: {err_msg_payload}\n\n"
+
+    return StreamingResponse(sse_generator(), media_type="text/event-stream")
