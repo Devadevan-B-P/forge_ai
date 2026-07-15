@@ -511,10 +511,7 @@ export default function Generator() {
   const simulatedStack = getSimulatedStack(idea, config);
 
   return (
-    <div
-      className="relative min-h-screen bg-[#050505] text-white overflow-x-hidden page-enter"
-      style={{ fontFamily: "'Inter', sans-serif" }}
-    >
+    <>
       {/* Particle background */}
       <canvas
         ref={canvasRef}
@@ -530,7 +527,11 @@ export default function Generator() {
       {/* Grain overlay */}
       <div className="grain-overlay fixed inset-0 z-0 pointer-events-none opacity-[0.03]" />
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div
+        className="relative min-h-screen bg-[#050505] text-white overflow-x-hidden page-enter"
+        style={{ fontFamily: "'Inter', sans-serif" }}
+      >
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         {/* ── Top Navigation ── */}
         <header className="flex items-center justify-between mb-12">
@@ -911,5 +912,6 @@ export default function Generator() {
         )}
       </div>
     </div>
+    </>
   );
 }
