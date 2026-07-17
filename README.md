@@ -1,216 +1,206 @@
-# Forge AI — AI Software Project Architect
+# 🛠️ Forge AI — AI-Powered Software Architect
 
-Describe a software idea → get back a complete architecture blueprint (features, tech stack, database schema, REST APIs, folder structure, AWS architecture, Docker architecture, roadmap, security, scalability). Two interactive generators are wired up: **Generate SQL** (Database tab) and **Generate Endpoint Code** (API tab, per endpoint) — both call Groq LLM asynchronously with a focused prompt.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688.svg?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![React](https://img.shields.io/badge/Frontend-React-61DAFB.svg?style=flat&logo=react&logoColor=black)](https://reactjs.org/)
+[![Docker](https://img.shields.io/badge/Container-Docker-2496ED.svg?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
+[![Caddy](https://img.shields.io/badge/Proxy-Caddy-00A2C9.svg?style=flat&logo=caddy&logoColor=white)](https://caddyserver.com/)
 
----
+Forge AI is an AI-powered Software Architect that transforms simple natural-language project descriptions into comprehensive, production-ready system architecture blueprints. 
 
-## Welcome to Forge AI
-
-Forge AI is an AI-powered Software Architect that transforms a simple project idea into a production-ready software blueprint.
-
-Instead of generating code immediately, Forge AI first designs the entire system architecture—including product requirements, database design, APIs, deployment strategy, and development roadmap—so your project starts with a solid foundation.
-
-Whether you're building an MVP, startup, enterprise platform, SaaS application, or internal tool, Forge AI provides a structured blueprint that development teams can confidently build upon.
+Instead of jumping straight to raw code, Forge AI focuses on designing a robust architectural blueprint including features, tech stacks, database schemas, REST APIs, directory structure, AWS deployment maps, and Docker configurations.
 
 ---
 
-## Features: What Forge AI Generates
+## ✨ Features
 
-Every generated blueprint includes:
-- **Product Requirements Document (PRD)**: Objectives, stakeholders, user stories, business rules, acceptance criteria, and success metrics.
-- **Prompt Analysis**: Domain identification, complexity metrics, scale assumptions, compliance scopes, and estimated development timeline.
-- **Technical Architecture**: Recommends frontend, backend, database, testing, and deployment frameworks tailored to your requirements.
-- **Database Schema**: Normalized database tables, fields, types, relationships, and ready-to-run dialect-specific SQL scripts.
-- **REST API Design**: Endpoints, request/response formats, validation, headers, and code handler code (FastAPI/Express).
-- **Project Folder Structure**: Organized directories matching standard industry layouts.
-- **AWS Deployment Architecture**: Scalable cloud environments (ECS, RDS, S3, CloudFront) optimized for your preferences.
-- **Docker Architecture**: Production-ready Dockerfiles and `docker-compose.yml` setups.
-- **Mermaid System Diagrams**: Renders interactive visual models: Entity-Relationship, Sequence, Flow, Deployment, and cloud topology maps.
-- **AI Architectural Recommendations**: Alternate implementation options, security recommendations, performance optimizations, and scaling advice.
+- **Product Requirements Document (PRD)**: Objectives, user stories, business rules, acceptance criteria, and success metrics.
+- **Technical Architecture**: Recommends appropriate frameworks, libraries, testing suites, and tools customized for the project scope.
+- **Database Schema**: Normalization, field types, relationships, and **ready-to-run dialect-specific SQL scripts** (with an interactive *Generate SQL* button).
+- **REST API Design**: Path definitions, request/response models, validations, and **endpoint-specific code generator** (FastAPI or Express handler code).
+- **Docker & Deployment Specs**: Pre-configured `Dockerfile` structure and multi-tier deployment topology.
+- **AWS Infrastructure Maps**: Recommendations for ECS, RDS, S3, and CloudFront.
+- **Mermaid.js Diagrams**: Renders interactive ERDs, Sequence diagrams, and Architecture Flow maps directly in the browser.
+- **High-Performance "About" Page**: Features a scroll-based canvas blooming flower animation, dynamically hidden on mobile devices (screens < 768px) with GPU frame caching to prevent redraw overhead when stationary.
+- **Interactive Particle Physics**: Features a canvas-based flying particles loop generating subtle, interactive background visuals in the **Contact** and **Generator** pages.
 
 ---
 
-## Supported Project Types
+## 🧠 AI Layer & System Design
 
-Forge AI supports virtually any software project including:
-- SaaS Platforms
-- E-Commerce Applications
-- AI Applications & Developer Tools
-- CRM Systems & ERP Platforms
-- Healthcare & FinTech Applications
-- EdTech & Mobile Applications
-- Dashboards & APIs
-- Internal Enterprise Software
+To guarantee high availability, speed, and structural integrity, Forge AI implements several unique patterns:
 
----
-
-## Blueprint Generation Workflow
-
-### Step 1 — Describe Your Idea
-Write your project in natural language. No technical knowledge is required.
-*   **Prompt Example:** *"Build an AI-powered project management platform for remote software teams."*
-*   **Prompt Example:** *"Create a QR payment application for local merchants."*
-
-### Step 2 — Select Your Stack
-Choose your preferred technologies across standard options:
-- **Architecture**: Monolith, Microservices
-- **Database**: PostgreSQL, MongoDB, MySQL
-- **Backend**: FastAPI, Express.js, Spring Boot
-- **Frontend**: React, Next.js, Vue
-- **Cloud**: AWS, Azure, Google Cloud
-- **Project Size**: MVP, Medium, Enterprise
-
-### Step 3 — Generate
-Forge AI analyzes your requirements, evaluates trade-offs, and designs the complete software architecture in less than one minute.
-
----
-
-## Prompting Best Practices
-
-### 1. Be Specific
-Detailed user requirements, payment preferences, or logistical parameters produce significantly better blueprints.
-*   **❌ Avoid:** *"Build an ecommerce app"*
-*   **✅ Better:** *"Build a regional marketplace for electronics with Stripe payments, inventory management, and same-day delivery."*
-
-### 2. Mention Business Requirements
-Include target users, expected initial scale, compliance rules (e.g., HIPAA/GDPR), or budget constraints.
-*   **Example:** *"Create a healthcare appointment booking platform using React, FastAPI, PostgreSQL, AWS, HIPAA compliance, and support for approximately 50,000 monthly users."*
-
-### 3. Mention Constraints
-If your project is subject to technical constraints, specify them to yield more tailored blueprints (e.g. *Low Budget MVP*, *AWS Only*, *Mobile First*, *Offline Support*, *High Availability*, *Enterprise Security*).
-
-### 4. Iterate
-Blueprint generation is iterative. Generate an initial blueprint, review the results, adjust/refine your prompt, and regenerate until the details match your vision.
-
----
-
-## Stack & Setup
-
-- **Backend**: FastAPI + Groq SDK (3-Model Waterfall: Qwen3 32B → GPT-OSS 120B → Llama 3.3 70B) + Motor (MongoDB driver)
-- **Frontend**: React + Vite + TypeScript + TailwindCSS + Framer Motion (animations) + Three.js (about page scroll loop)
-
-### 1. Backend Setup
-
-```bash
-cd backend
-python -m venv venv
-source venv/bin/activate   # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-
-cp .env.example .env
-# edit .env and configure settings (see below)
-
-uvicorn main:app --reload --port 8000
-```
-
-#### Configuring Backend `.env`
-
-The backend expects the following environment variables:
-- `GROQ_API_KEY`: Get your key from Groq Console (e.g. `gsk_...`). A single key is used for all models in the waterfall.
-- `MONGODB_URI`: Connection string for MongoDB (Atlas recommended).
-- `MONGODB_DB`: MongoDB database name (default: `forge_ai`).
-- `JWT_SECRET_KEY`: A secure random secret key. Generate one with:
-  ```bash
-  python -c "import secrets; print(secrets.token_hex(32))"
-  ```
-- `REDIS_URL`: (Optional) Redis connection URL (e.g., `redis://localhost:6379`). Used for multi-worker rate limiting and concurrent model fallback tracking.
-
-#### Running Automated Tests
-
-Run the backend test suite via `pytest` to verify security, generator IDOR blocks, JWT validation, and the model waterfall fallback sequence:
-```bash
-python -m pytest
-```
-
-### 2. Frontend Setup
-
-In a second terminal:
-
-```bash
-cd frontend
-yarn install    # or npm install
-
-cp .env.example .env
-# edit .env and configure your EmailJS service, templates, and public keys
-
-yarn dev        # or npm run dev
-```
-
-Frontend runs at `http://localhost:5173` and proxies `/api/*` to the backend (configured in `vite.config.ts`), avoiding CORS issues.
-
-### 3. Docker Compose Deployment (Production)
-
-You can build and deploy the entire stack (including Redis rate-limiting) via Docker Compose:
-
-```bash
-# Build the containers
-docker-compose build
-
-# Start the services in detached mode
-docker-compose up -d
-```
-
-- **Frontend**: Serves compiled static assets through Nginx on port `80` (accessible at `http://localhost`). All `/api/*` endpoints are reverse-proxied internally to the backend service container.
-- **Backend & Redis**: Stays internal-only to the Compose bridge network (not exposed to the host) for API security.
-- **Secrets**: Backend secrets are dynamically loaded from `./backend/.env` at runtime using `env_file`.
-
----
-
-## Project Structure
-
-```
-forge-ai/
-  backend/
-    main.py                    FastAPI app entrypoint
-    app/
-      core/config.py           env settings (Groq settings, security)
-      core/security.py         JWT/bcrypt utilities, get_current_user projection
-      core/security_middleware.py in-memory rate-limiter middleware
-      schemas/blueprint.py     Pydantic request/response models
-      schemas/auth.py          Auth schemas, including UserResponse structure
-      prompts/system_prompt.py the architect system prompt + JSON schema
-      services/groq_service.py Groq calls (blueprint, SQL, endpoint code) - async
-      routers/blueprint.py     POST /api/blueprint/generate
-      routers/generators.py    POST /api/generate/sql, /api/generate/endpoint
-      routers/history.py       POST /api/history routes
-    tests/                     automated pytest suite:
-      test_auth.py             JWT session and auth endpoint tests
-      test_generators.py       security and IDOR checking for code generation
-      test_history.py          history project CRUD tests
-      test_waterfall.py        model waterfall, rate limits, and proactive token skip tests
-  frontend/
-    src/
-      pages/Landing.tsx        landing page with "Start Building" CTA
-      pages/About.tsx          cinematic scroll-based animation page (GPU optimized)
-      pages/Contact.tsx        contact form page submitting directly via EmailJS (T&C included)
-      pages/Generator.tsx      main generator page (idea input + config + output)
-      pages/Auth.tsx           login / signup page (terms and conditions validation modal included)
-      components/ConfigPanel.tsx
-      components/OutputTabs.tsx        tab switcher
-      components/tabs/SimpleTabs.tsx   Overview/Features/TechStack/Folder/AWS/Docker/Timeline/Security
-      components/tabs/DatabaseTab.tsx  table view + Generate SQL
-      components/tabs/ApiTab.tsx       endpoint list + Generate Endpoint Code
-      components/CodeModal.tsx         shared code output modal (copy button)
-      services/api.ts          axios calls to the backend
-      types/blueprint.ts       TS types mirroring the backend schema
-```
-
----
-
-## Notes on the AI Layer & System Design
-
-- **Optimized 3-Model Waterfall Fallback**: The core pipeline cascades through a 3-model waterfall sequence (`Qwen3 32B` → `GPT-OSS 120B` → `Llama 3.3 70B`) served via Groq to guarantee high availability and bypass API rate-limiting under load.
+- **Optimized 3-Model Waterfall Fallback**: The core pipeline cascades through a 3-model waterfall sequence (`Qwen3 32B` → `GPT-OSS 120B` → `Llama 3.3 70B`) served via Groq to bypass API rate-limiting under load.
 - **Proactive Token Skipping & Capping**: Calculates estimated token requests (`input_tokens + max_output_tokens`) up front. If the estimate exceeds a model's total TPM limit, the pipeline dynamically scales down the output tokens to fit inside the budget, or proactively skips the model entirely if the remaining output space is too small (`< 2000` tokens).
 - **Synchronized Cooldown Trackers**: Integrates with Redis and local memory states to block rate-limited or capacity-exhausted models for 30 seconds, forcing concurrent/subsequent requests to bypass them proactively without making wasted round trips.
 - **Stale Chunks SSE Flushing**: Discards partial chunk data on both the backend and frontend when a model switch occurs, ensuring that the final output doesn't contain a mix of content from multiple models.
 - **JSON Repair Fallback**: Integrates a client-side and server-side text-based JSON repair parser to salvage truncated JSON strings (e.g., if a model hits token limits mid-generation) by closing open strings and structures.
 - **Groq JSON Mode**: The blueprint generation utilizes Groq JSON mode (`response_format={"type": "json_object"}`) to guarantee structured, easily parseable JSON outputs matching the backend Pydantic expectations.
 - **Asynchronous LLM Calls**: The Database SQL and API Code snippet generators run inside small, async prompts, focusing context windows only on the relevant segments to maximize generation speed and minimize token costs.
-- **Strict JSON Prompt Guidelines**: The system prompt enforces strict JSON formatting rules (e.g. banning escaped single quotes `\'` in string enums) to prevent Groq API validator schema rejections.
-- **Event-Loop Safe Caching**: Upgraded the rate limiter middleware to use `redis.asyncio` (async pipeline executions) when deployed with Docker Compose, eliminating event-loop blockages and supporting scalable multi-worker backend containers.
-- **SSL Handshake Handling**: Integrated `certifi` CA validation to trust TLS certificates and prevent MongoDB Atlas connection dropouts on local Windows and container runtimes.
-- **Dynamic IP Whitelisting**: Handled Atlas database firewall drops by whitelisting rotating ISP blocks (`157.51.0.0/16` or `0.0.0.0/0`) dynamically.
-- **Secure Build-Time Configs**: Restored `.env` exclusions in `.dockerignore` to secure image layers from credentials baking, passing parameters (like EmailJS IDs) securely as Docker build arguments.
-- **GPU Caching Scroll Animations**: Canvas drawings inside `About.tsx` cache the active frame index (`lastDrawnFrameIndex`) to skip redrawing layers when the scroll position is stationary, drastically reducing CPU/GPU overhead.
-- **Terms & Conditions React Modal**: Replaced standard alert boxes with an inline React Modal in `Auth.tsx` complete with body scroll locking and account creation validation checks.
-- **Interactive Flying Particles**: Features a canvas-based particle physics loop generating subtle, interactive background visuals in the **Contact** page and the **Generator** page.
+
+---
+
+## 🛠️ Tech Stack
+
+- **Backend**: FastAPI (Python), Groq SDK, Motor (Async MongoDB Driver), Redis (Rate Limiting / Cooldown Sync), Pytest (Testing)
+- **Frontend**: React, Vite, TypeScript, TailwindCSS, Framer Motion (Transitions), Three.js / Canvas (Scroll and Particle Animations)
+- **Deployment**: Docker, Docker Compose, Caddy (Reverse proxy, Gzip compression, automatic SSL/TLS), Nginx (Frontend asset server)
+
+---
+
+## ⚙️ Setup & Installation
+
+### Prerequisites
+Ensure you have the following installed on your machine:
+- **Python** (v3.10 or higher)
+- **Node.js & NPM/Yarn** (v18 or higher)
+- **Docker & Docker Compose** (for containerized deployment)
+- **MongoDB** (Local instance or MongoDB Atlas account)
+- **Groq API Key** (from [Groq Console](https://console.groq.com/))
+
+---
+
+### Option 1: Local Development Setup
+
+#### 1. Backend Setup
+1. Navigate to the backend directory:
+   ```bash
+   cd backend
+   ```
+2. Create and activate a Python virtual environment:
+   ```bash
+   python -m venv venv
+   # On macOS/Linux:
+   source venv/bin/activate
+   # On Windows (cmd):
+   venv\Scripts\activate
+   # On Windows (PowerShell):
+   .\venv\Scripts\Activate.ps1
+   ```
+3. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+4. Copy the environment template and fill in your variables:
+   ```bash
+   cp .env.example .env
+   ```
+   **Configure the variables in `.env`:**
+   - `GROQ_API_KEY`: Your Groq API key (starts with `gsk_...`).
+   - `MONGODB_URI`: Connection string for MongoDB (e.g., `mongodb+srv://...` for Atlas, or `mongodb://localhost:27017` for local).
+   - `MONGODB_DB`: Database name (e.g., `forge_ai`).
+   - `JWT_SECRET_KEY`: A secure random secret key. Generate one with:
+     ```bash
+     python -c "import secrets; print(secrets.token_hex(32))"
+     ```
+   - `REDIS_URL`: *(Optional)* Connection URL for Redis caching/cooldown sync. Leave blank to disable.
+5. Start the FastAPI development server:
+   ```bash
+   python -m uvicorn main:app --reload --port 8000
+   ```
+
+#### 2. Frontend Setup
+1. Navigate to the frontend directory:
+   ```bash
+   cd ../frontend
+   ```
+2. Install npm packages:
+   ```bash
+   yarn install   # or npm install
+   ```
+3. Copy the environment template and fill in your credentials (e.g., for contact form EmailJS integrations):
+   ```bash
+   cp .env.example .env
+   ```
+4. Start the frontend development server:
+   ```bash
+   yarn dev       # or npm run dev
+   ```
+5. Open your browser and navigate to `http://localhost:5173`. Frontend API calls are automatically proxied to the backend at `http://localhost:8000` via Vite configuration.
+
+---
+
+### Option 2: Docker Compose Deployment (Production-ready)
+
+The stack is pre-configured to build, link, and deploy in one command using Docker Compose, reverse-proxied with **Caddy** for automated routing and gzip encoding.
+
+1. Ensure your `.env` settings are properly populated:
+   - Make sure your MongoDB network allows access (e.g., whitelist your server IP or set `0.0.0.0/0` in Atlas Network Access).
+   - Set the required variables in `./backend/.env`.
+2. Build and launch the containers:
+   ```bash
+   docker-compose up -d --build
+   ```
+3. The setup coordinates the following:
+   - **Caddy**: Exposed on ports `80` and `443`. Listens on `forge-ai-dev.cloud-ip.cc` (or your customized domain in `Caddyfile`) and reverse-proxies requests to the frontend service container.
+   - **Frontend**: Running inside an Nginx container serving static build assets.
+   - **Backend & Redis**: Stays internal-only to the Docker bridge network to protect the APIs, with Redis caching/rate-limiting enabled automatically.
+
+To shut down the running containers:
+```bash
+docker-compose down
+```
+
+---
+
+## 🧪 Testing
+
+Forge AI features an automated test suite verifying auth flow, JWT tokens, generator security/IDOR blocks, and rate limiter fallback sequences.
+
+To run backend tests locally:
+```bash
+cd backend
+python -m pytest
+```
+
+---
+
+## 📂 Project Structure
+
+```
+forge-ai/
+  backend/
+    main.py                      # FastAPI entrypoint & app context
+    app/
+      core/config.py             # App configurations, secrets, and environments
+      core/security.py           # Password hashing, JWT credentials verification
+      core/security_middleware.py # In-memory rate limiter middleware for endpoints
+      schemas/blueprint.py       # Pydantic schemas for project architecture payload
+      schemas/auth.py            # User Auth models
+      prompts/system_prompt.py   # System rules & strict JSON expectations for the AI
+      services/groq_service.py   # Async Groq API requests with waterfall logic
+      routers/blueprint.py       # Blueprint generator routes
+      routers/generators.py      # Dialect SQL and Code snippet generator routes
+      routers/history.py         # Saved user history routes
+    tests/                       # Automated pytest test cases
+  frontend/
+    src/
+      pages/Landing.tsx          # Start building landing page
+      pages/About.tsx            # Cinematic scroll-based animations (mobile-disabled)
+      pages/Contact.tsx          # Contact forms integration (via EmailJS)
+      pages/Generator.tsx        # Dashboard workspace generator (configuration + tabs)
+      pages/Auth.tsx             # Signup / Login with validation modal
+      components/ConfigPanel.tsx # Parameter selectors (database, backend, frontend, size)
+      components/OutputTabs.tsx  # Dynamic layout switcher tabs
+      services/api.ts            # Axios backend instance requests
+      types/blueprint.ts         # TypeScript structural interface declarations
+  Caddyfile                      # Production proxy routing server rules
+  docker-compose.yml             # Orchestration profile
+```
+
+---
+
+## 💡 Prompting Best Practices
+
+For best results during architectural generation:
+1. **Be Specific**: Include details about payment gateways, delivery mechanisms, or expected user roles.
+   - ❌ *Avoid:* "Build an e-commerce app"
+   - ✅ *Better:* "Build an electronics marketplace for South Asia with Stripe integration, product reviews, merchant stores, and email confirmations."
+2. **Specify Compliance**: Let the AI know if you require specific frameworks (e.g., HIPAA, GDPR, PCI-DSS compliance).
+3. **Include Scale Assumptions**: Mention expected initial traffic (e.g., "designed to scale up to 100k active users").
+
+---
+
+## 📄 License
+
+Distributed under the MIT License. See `LICENSE` for more information.
