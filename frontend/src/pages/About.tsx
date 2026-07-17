@@ -130,12 +130,17 @@ export default function About() {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
+    // Only set up scroll animation on PC/Laptops (md screen size >= 768px)
+    const isDesktop = () => window.innerWidth >= 768;
+    if (!isDesktop()) return;
+
     let targetFrame = 0;
     let currentFrame = 0;
     const lerpFactor = 0.06; // Highly smooth deceleration factor
     let animationFrameId: number;
 
     const handleScroll = () => {
+      if (!isDesktop()) return;
       const video = videoRef.current;
       if (!video || !video.duration) return;
 
@@ -213,7 +218,7 @@ export default function About() {
         playsInline
         muted
         preload="auto"
-        className="fixed inset-0 w-screen h-screen object-cover z-0 pointer-events-none opacity-20"
+        className="hidden md:block fixed inset-0 w-screen h-screen object-cover z-0 pointer-events-none opacity-20"
       />
 
       {/* Content wrapper */}

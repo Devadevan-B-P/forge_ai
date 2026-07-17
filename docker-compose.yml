@@ -16,21 +16,36 @@ services:
       - ./backend/.env
     environment:
       - REDIS_URL=redis://redis:6379/0
-    # Port 8000 remains internal-only to prevent direct outside access.
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - VITE_EMAILJS_SERVICE_ID=${VITE_EMAILJS_SERVICE_ID}
-        - VITE_EMAILJS_CONTACT_TEMPLATE_ID=${VITE_EMAILJS_CONTACT_TEMPLATE_ID}
-        - VITE_EMAILJS_AUTO_REPLY_TEMPLATE_ID=${VITE_EMAILJS_AUTO_REPLY_TEMPLATE_ID}
-        - VITE_EMAILJS_PUBLIC_KEY=${VITE_EMAILJS_PUBLIC_KEY}
+        VITE_EMAILJS_SERVICE_ID: ${VITE_EMAILJS_SERVICE_ID}
+        VITE_EMAILJS_CONTACT_TEMPLATE_ID: ${VITE_EMAILJS_CONTACT_TEMPLATE_ID}
+        VITE_EMAILJS_AUTO_REPLY_TEMPLATE_ID: ${VITE_EMAILJS_AUTO_REPLY_TEMPLATE_ID}
+        VITE_EMAILJS_PUBLIC_KEY: ${VITE_EMAILJS_PUBLIC_KEY}
     container_name: forge_ai_frontend
     restart: unless-stopped
     depends_on:
       - backend
+    expose:
+      - "80"
+
+  caddy:
+    image: caddy:2
+    container_name: forge_ai_caddy
+    restart: unless-stopped
+    depends_on:
+      - frontend
     ports:
       - "80:80"
       - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+volumes:
+  caddy_data:
+  caddy_config:

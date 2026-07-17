@@ -1,0 +1,9 @@
+{
+    email devadevan62338@gmail.com
+}
+
+forge-ai-dev.cloud-ip.cc {
+    encode gzip
+
+    reverse_proxy frontend:80
+}
