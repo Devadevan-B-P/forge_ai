@@ -31,6 +31,16 @@ RUN npm run build
 # ==========================================
 FROM nginx:alpine AS runner
 
+# Install openssl to generate self-signed SSL certs for HTTPS support
+RUN apk add --no-cache openssl
+
+# Generate self-signed SSL cert for localhost CN
+RUN mkdir -p /etc/ssl/private /etc/ssl/certs && \
+    openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+    -keyout /etc/ssl/private/nginx-selfsigned.key \
+    -out /etc/ssl/certs/nginx-selfsigned.crt \
+    -subj "/C=US/ST=State/L=City/O=Organization/CN=localhost"
+
 # Copy static build output to nginx folder
 COPY --from=builder /app/dist /usr/share/nginx/html
 
@@ -38,5 +48,6 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
+EXPOSE 443
 
 CMD ["nginx", "-g", "daemon off;"]

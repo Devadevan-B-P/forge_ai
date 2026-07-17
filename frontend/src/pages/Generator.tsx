@@ -558,20 +558,41 @@ export default function Generator() {
     const pageWidth = 210, pageHeight = 297, margin = 20, contentWidth = pageWidth - 2 * margin;
     let y = 20;
 
+    let currentFontType = "helvetica";
+    let currentFontStyle = "normal";
+    let currentFontSize = 10;
+    let currentFontColor = [51, 65, 85]; // [R, G, B]
+
     const checkPageBreak = (neededHeight: number) => {
-      if (y + neededHeight > pageHeight - margin) { doc.addPage(); y = 20; }
+      if (y + neededHeight > pageHeight - margin) {
+        doc.addPage();
+        y = 20;
+        // Re-apply style state as doc.addPage() resets styles in jsPDF
+        doc.setFont(currentFontType, currentFontStyle);
+        doc.setFontSize(currentFontSize);
+        doc.setTextColor(currentFontColor[0], currentFontColor[1], currentFontColor[2]);
+      }
     };
 
     const addText = (text: string, size = 10, isBold = false, color = "#334155") => {
-      doc.setFont("helvetica", isBold ? "bold" : "normal");
-      doc.setFontSize(size);
+      currentFontStyle = isBold ? "bold" : "normal";
+      currentFontSize = size;
       const r = parseInt(color.slice(1, 3), 16);
       const g = parseInt(color.slice(3, 5), 16);
       const b = parseInt(color.slice(5, 7), 16);
+      currentFontColor = [r, g, b];
+
+      doc.setFont(currentFontType, currentFontStyle);
+      doc.setFontSize(currentFontSize);
       doc.setTextColor(r, g, b);
+
       const lines = doc.splitTextToSize(text, contentWidth);
       const lineHeight = size * 0.45;
-      lines.forEach((line: string) => { checkPageBreak(lineHeight); doc.text(line, margin, y); y += lineHeight; });
+      lines.forEach((line: string) => {
+        checkPageBreak(lineHeight);
+        doc.text(line, margin, y);
+        y += lineHeight;
+      });
       y += 1.8;
     };
 
@@ -591,15 +612,24 @@ export default function Generator() {
     };
 
     const addBullet = (text: string) => {
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9.5);
+      currentFontStyle = "normal";
+      currentFontSize = 9.5;
+      currentFontColor = [51, 65, 85];
+
+      doc.setFont(currentFontType, currentFontStyle);
+      doc.setFontSize(currentFontSize);
       doc.setTextColor(51, 65, 85);
+
       const lines = doc.splitTextToSize(text, contentWidth - 6);
       const lineHeight = 9.5 * 0.45;
       lines.forEach((line: string, index: number) => {
         checkPageBreak(lineHeight);
-        if (index === 0) { doc.text("•", margin, y); doc.text(line, margin + 5, y); }
-        else { doc.text(line, margin + 5, y); }
+        if (index === 0) {
+          doc.text("•", margin, y);
+          doc.text(line, margin + 5, y);
+        } else {
+          doc.text(line, margin + 5, y);
+        }
         y += lineHeight;
       });
       y += 1.5;
@@ -1254,15 +1284,30 @@ export default function Generator() {
                   className="px-6 py-4 flex items-center justify-between"
                   style={{ background: "#0E1014", borderBottom: "1px solid #22252B" }}
                 >
-                  <div className="flex items-center gap-3">
-                    {loading ? (
-                      <Loader2 className="animate-spin text-[#5FA9FF]" size={14} />
-                    ) : (
-                      <div className="w-2 h-2 rounded-full bg-[#3DD9A4]" />
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      {loading ? (
+                        <Loader2 className="animate-spin text-[#5FA9FF]" size={14} />
+                      ) : (
+                        <div className="w-2 h-2 rounded-full bg-[#3DD9A4]" />
+                      )}
+                      <p className="text-sm font-medium text-white">
+                        {loading ? "Streaming blueprint..." : "Blueprint Generated"}
+                      </p>
+                    </div>
+                    {activeModel && (
+                      <span
+                        key={activeModel}
+                        className="text-[10px] px-2 py-0.5 rounded-full font-mono font-medium border animate-tab-fade"
+                        style={{
+                          background: "rgba(61,217,164,0.08)",
+                          color: "#3DD9A4",
+                          border: "1px solid rgba(61,217,164,0.25)",
+                        }}
+                      >
+                        ⚡ {activeModel}
+                      </span>
                     )}
-                    <p className="text-sm font-medium text-white">
-                      {loading ? "Streaming blueprint..." : "Blueprint Generated"}
-                    </p>
                   </div>
                   <div className="flex flex-wrap gap-1.5 max-w-[60%] justify-end">
                     {Object.values(config).map((v) => (

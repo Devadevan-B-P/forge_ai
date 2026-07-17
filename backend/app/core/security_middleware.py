@@ -1,4 +1,7 @@
 import time
+import sqlite3
+import tempfile
+from pathlib import Path
 from collections import defaultdict
 from starlette.types import ASGIApp, Receive, Scope, Send
 from starlette.responses import JSONResponse
@@ -21,6 +24,10 @@ class SecurityMiddleware:
         self.limit_period = 60
         self.auth_limit = 10
         self.general_limit = 60
+        
+        # SQLite path for multi-worker fallback
+        self.db_path = Path(tempfile.gettempdir()) / "app_rate_limit.db"
+        self._init_sqlite()
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send):
         if scope["type"] != "http":
@@ -58,11 +65,11 @@ class SecurityMiddleware:
                 if current_requests > limit:
                     is_rate_limited = True
             except Exception as e:
-                # Fallback to in-memory on Redis error
-                print(f"[WARN] Redis rate limiting failed, falling back to in-memory: {e}")
-                is_rate_limited = self._check_in_memory(client_ip, limit, now)
+                # Fallback to SQLite/in-memory on Redis error
+                print(f"[WARN] Redis rate limiting failed, falling back to SQLite: {e}")
+                is_rate_limited = self._check_sqlite(client_ip, 'auth' if is_auth else 'general', limit, now)
         else:
-            is_rate_limited = self._check_in_memory(client_ip, limit, now)
+            is_rate_limited = self._check_sqlite(client_ip, 'auth' if is_auth else 'general', limit, now)
 
         if is_rate_limited:
             response = JSONResponse(
@@ -73,6 +80,62 @@ class SecurityMiddleware:
             return
 
         await self.app(scope, receive, send)
+
+    def _init_sqlite(self):
+        try:
+            conn = sqlite3.connect(self.db_path, timeout=5.0)
+            try:
+                conn.execute("PRAGMA journal_mode=WAL")
+                conn.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS rate_limits (
+                        ip TEXT,
+                        endpoint_type TEXT,
+                        timestamp REAL
+                    )
+                    """
+                )
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_ip_type_time ON rate_limits (ip, endpoint_type, timestamp)")
+                conn.commit()
+            finally:
+                conn.close()
+        except Exception as e:
+            print(f"[WARN] SQLite rate limit fallback initialization failed: {e}")
+
+    def _check_sqlite(self, client_ip: str, endpoint_type: str, limit: int, now: float) -> bool:
+        try:
+            conn = sqlite3.connect(self.db_path, timeout=5.0)
+            try:
+                conn.execute("PRAGMA journal_mode=WAL")
+                # Delete expired entries
+                conn.execute(
+                    "DELETE FROM rate_limits WHERE ? - timestamp > ?",
+                    (now, self.limit_period)
+                )
+                # Count current requests
+                cursor = conn.cursor()
+                cursor.execute(
+                    "SELECT COUNT(*) FROM rate_limits WHERE ip = ? AND endpoint_type = ? AND ? - timestamp < ?",
+                    (client_ip, endpoint_type, now, self.limit_period)
+                )
+                count = cursor.fetchone()[0]
+                
+                if count >= limit:
+                    conn.commit()
+                    return True
+                
+                # Insert current request
+                conn.execute(
+                    "INSERT INTO rate_limits (ip, endpoint_type, timestamp) VALUES (?, ?, ?)",
+                    (client_ip, endpoint_type, now)
+                )
+                conn.commit()
+                return False
+            finally:
+                conn.close()
+        except Exception as e:
+            print(f"[WARN] SQLite rate-limiting check failed: {e}. Falling back to per-process in-memory.")
+            return self._check_in_memory(client_ip, limit, now)
 
     def _check_in_memory(self, client_ip: str, limit: int, now: float) -> bool:
         ip_limits = self.rate_limits[client_ip]

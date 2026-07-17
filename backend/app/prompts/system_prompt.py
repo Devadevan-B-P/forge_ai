@@ -10,6 +10,8 @@ CRITICAL JSON RULES:
 1. The output must be strictly valid JSON.
 2. NEVER use escaped single quotes (`\'`) in JSON strings. If you write an ENUM or standard type, write it as `ENUM('instructor', 'student', 'admin')` using raw single quotes `'` without any backslashes. Escaped single quotes `\'` are syntax violations in JSON and will crash the validator.
 3. Ensure all double quotes inside string values are properly escaped as `\"`.
+4. SPELLING, GRAMMAR & CONTENT QUALITY: Ensure professional, enterprise-grade English in all fields. All text must be fully written, containing correct grammar, spelling, and punctuation. Do NOT use abbreviations like "Ust" for User Stories, or typos like "won" instead of "with".
+5. USER STORIES FORMAT: Each user story in the `userStories` array must strictly follow the standard format: "As a [persona], I want to [action], so that [benefit]." Do not write shorthand or truncate stories.
 
 JSON Schema:
 {

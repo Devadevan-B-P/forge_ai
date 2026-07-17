@@ -127,122 +127,63 @@ function PrincipleCard({ p, index }: { p: { icon: LucideIcon; title: string; bod
 export default function About() {
   const navigate = useNavigate();
   const heroContainerRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const imagesRef = useRef<HTMLImageElement[]>([]);
-  const frameCount = 151;
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    // 1. Preload images
-    const preloadedImages: HTMLImageElement[] = [];
-    let loadedCount = 0;
-
-    const drawImageCover = (ctx: CanvasRenderingContext2D, img: HTMLImageElement) => {
-      const canvas = ctx.canvas;
-      const canvasWidth = canvas.width;
-      const canvasHeight = canvas.height;
-      const imgWidth = img.width || 1920;
-      const imgHeight = img.height || 1080;
-
-      const imgRatio = imgWidth / imgHeight;
-      const canvasRatio = canvasWidth / canvasHeight;
-
-      let drawWidth = canvasWidth;
-      let drawHeight = canvasHeight;
-      let offsetX = 0;
-      let offsetY = 0;
-
-      if (canvasRatio > imgRatio) {
-        drawHeight = canvasWidth / imgRatio;
-        offsetY = (canvasHeight - drawHeight) / 2;
-      } else {
-        drawWidth = canvasHeight * imgRatio;
-        offsetX = (canvasWidth - drawWidth) / 2;
-      }
-
-      ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-      ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
-    };
-
-    for (let i = 0; i < frameCount; i++) {
-      const img = new Image();
-      img.src = `/flower-frames/frame_${i.toString().padStart(3, "0")}.jpg`;
-      img.onload = () => {
-        loadedCount++;
-        if (i === 0 && canvasRef.current) {
-          const ctx = canvasRef.current.getContext("2d");
-          if (ctx) drawImageCover(ctx, img);
-        }
-      };
-      preloadedImages.push(img);
-    }
-    imagesRef.current = preloadedImages;
-
-    // 2. Setup scroll tracking and smooth loop
     let targetFrame = 0;
     let currentFrame = 0;
-    const lerpFactor = 0.15;
+    const lerpFactor = 0.06; // Highly smooth deceleration factor
     let animationFrameId: number;
-    let lastDrawnFrameIndex = -1;
 
     const handleScroll = () => {
+      const video = videoRef.current;
+      if (!video || !video.duration) return;
+
       const scrollTop = window.scrollY || document.documentElement.scrollTop;
       const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
       if (scrollHeight <= 0) return;
+
       const progress = Math.max(0, Math.min(1, scrollTop / scrollHeight));
-      targetFrame = progress * (frameCount - 1);
+      targetFrame = progress * 150; // Map progress to frame index (0 to 150)
     };
 
-    const updateCanvas = () => {
-      currentFrame += (targetFrame - currentFrame) * lerpFactor;
-      
-      const frameIndex = Math.round(currentFrame);
-      if (frameIndex !== lastDrawnFrameIndex) {
-        const img = imagesRef.current[frameIndex];
-        const canvas = canvasRef.current;
-        if (canvas && img && img.complete) {
-          const ctx = canvas.getContext("2d");
-          if (ctx) {
-            drawImageCover(ctx, img);
-            lastDrawnFrameIndex = frameIndex;
-          }
+    const updateVideoSeek = () => {
+      const video = videoRef.current;
+      if (video && video.duration) {
+        // Smoothly interpolate current frame position
+        currentFrame += (targetFrame - currentFrame) * lerpFactor;
+        
+        const frameDuration = video.duration / 150;
+        const targetTime = currentFrame * frameDuration;
+        
+        // Seek only if the target timestamp is a meaningful change from current position
+        if (Math.abs(video.currentTime - targetTime) > (frameDuration / 4)) {
+          video.currentTime = targetTime;
         }
       }
-
-      animationFrameId = requestAnimationFrame(updateCanvas);
+      animationFrameId = requestAnimationFrame(updateVideoSeek);
     };
 
-    const handleResize = () => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-
-      // Force redraw on resize
-      lastDrawnFrameIndex = -1;
-
-      const frameIndex = Math.round(currentFrame);
-      const img = imagesRef.current[frameIndex];
-      if (img && img.complete) {
-        const ctx = canvas.getContext("2d");
-        if (ctx) {
-          drawImageCover(ctx, img);
-          lastDrawnFrameIndex = frameIndex;
-        }
-      }
-    };
-
+    // Listen to scroll events
     window.addEventListener("scroll", handleScroll, { passive: true });
-    window.addEventListener("resize", handleResize);
     
-    handleResize();
+    // Ensure initial scroll position is synced once video metadata is available
+    const video = videoRef.current;
+    if (video) {
+      video.addEventListener("loadedmetadata", handleScroll);
+    }
+    
+    // Trigger scroll logic initially
     handleScroll();
     
-    animationFrameId = requestAnimationFrame(updateCanvas);
+    // Start smooth animation loop
+    animationFrameId = requestAnimationFrame(updateVideoSeek);
 
     return () => {
       window.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("resize", handleResize);
+      if (video) {
+        video.removeEventListener("loadedmetadata", handleScroll);
+      }
       cancelAnimationFrame(animationFrameId);
     };
   }, []);
@@ -265,10 +206,14 @@ export default function About() {
 
   return (
     <div className="min-h-screen w-full overflow-x-hidden relative">
-      {/* Scroll-driven blooming flower background canvas */}
-      <canvas
-        ref={canvasRef}
-        className="fixed inset-0 w-screen h-screen z-0 pointer-events-none opacity-20"
+      {/* Scroll-driven blooming flower background video */}
+      <video
+        ref={videoRef}
+        src="/flower.mp4"
+        playsInline
+        muted
+        preload="auto"
+        className="fixed inset-0 w-screen h-screen object-cover z-0 pointer-events-none opacity-20"
       />
 
       {/* Content wrapper */}

@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
@@ -13,13 +14,14 @@ from app.core.database import get_db
 # Password helpers
 # ────────────────────────────────────────────────────────────────────
 
-def hash_password(plain: str) -> str:
-    salt = bcrypt.gensalt(rounds=12)
-    return bcrypt.hashpw(plain.encode(), salt).decode()
+async def hash_password(plain: str) -> str:
+    salt = await asyncio.to_thread(bcrypt.gensalt, rounds=12)
+    hashed = await asyncio.to_thread(bcrypt.hashpw, plain.encode(), salt)
+    return hashed.decode()
 
 
-def verify_password(plain: str, hashed: str) -> bool:
-    return bcrypt.checkpw(plain.encode(), hashed.encode())
+async def verify_password(plain: str, hashed: str) -> bool:
+    return await asyncio.to_thread(bcrypt.checkpw, plain.encode(), hashed.encode())
 
 
 # ────────────────────────────────────────────────────────────────────

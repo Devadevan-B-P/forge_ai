@@ -37,7 +37,7 @@ async def signup(body: SignupRequest):
         "_id": user_id,
         "email": body.email,
         "name": body.name or body.email.split("@")[0],
-        "password_hash": hash_password(body.password),
+        "password_hash": await hash_password(body.password),
         "created_at": now,
         "last_login": now,
     }
@@ -64,7 +64,7 @@ async def login(body: LoginRequest):
             status_code=404,
             detail="No account found with this email. Sign up to get started!",
         )
-    if not verify_password(body.password, user["password_hash"]):
+    if not await verify_password(body.password, user["password_hash"]):
         raise HTTPException(
             status_code=401,
             detail="Incorrect password — try again!",
