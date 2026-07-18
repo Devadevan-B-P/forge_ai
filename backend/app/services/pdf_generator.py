@@ -11,10 +11,23 @@ def clean_text(text: str) -> str:
         return ""
     # Remove ASCII control characters except newline and tab (including U+0011 control characters)
     text = re.sub(r'[\x00-\x08\x0B-\x1F\x7F]', '', text)
-    # Normalize unicode
-    text = text.replace("–", "-")
-    text = text.replace("—", "-")
-    text = text.replace("•", "* ")
+    
+    # Normalize unicode fancy dashes, hyphens, and non-breaking spaces
+    replacements = {
+        "\u2010": "-",  # Hyphen
+        "\u2011": "-",  # Non-breaking hyphen
+        "\u2012": "-",  # Figure dash
+        "\u2013": "-",  # En dash
+        "\u2014": "-",  # Em dash
+        "\u2212": "-",  # Minus sign
+        "\u00A0": " ",  # Non-breaking space
+        "–": "-",
+        "—": "-",
+        "•": "* ",
+    }
+    for old, new in replacements.items():
+        text = text.replace(old, new)
+        
     # Replace single newlines with spaces, keeping double newlines as paragraph breaks
     text = text.replace("\r", "")
     paragraphs = text.split("\n\n")

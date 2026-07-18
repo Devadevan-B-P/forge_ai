@@ -593,7 +593,7 @@ export default function Generator() {
     if (!blueprint) return;
 
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("forge_ai_token");
       const response = await fetch("/api/blueprint/pdf", {
         method: "POST",
         headers: {
