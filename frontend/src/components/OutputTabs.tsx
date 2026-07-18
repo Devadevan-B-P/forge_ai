@@ -12,7 +12,6 @@ import {
   PromptAnalysisTab,
   PrdTab,
   AiRecommendationsTab,
-  MermaidTab,
 } from "./tabs/SimpleTabs";
 import DatabaseTab from "./tabs/DatabaseTab";
 import ApiTab from "./tabs/ApiTab";
@@ -31,7 +30,6 @@ const TABS = [
   "Timeline",
   "Security",
   "AI Recommendations",
-  "Mermaid Diagrams",
 ] as const;
 
 export default function OutputTabs({
@@ -81,8 +79,6 @@ export default function OutputTabs({
         return !!bp.security;
       case "AI Recommendations":
         return !!bp.aiRecommendations;
-      case "Mermaid Diagrams":
-        return !!bp.mermaid;
       default:
         return false;
     }
@@ -142,7 +138,6 @@ export default function OutputTabs({
           {active === "Timeline" && <TimelineTab bp={bp} />}
           {active === "Security" && <SecurityTab bp={bp} />}
           {active === "AI Recommendations" && <AiRecommendationsTab bp={bp} />}
-          {active === "Mermaid Diagrams" && <MermaidTab bp={bp} />}
         </div>
       </div>
     </div>

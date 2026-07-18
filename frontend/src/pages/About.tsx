@@ -298,13 +298,6 @@ export default function About() {
           </div>
         </div>
 
-        {/* Scroll indicator */}
-        <div className="pb-8 flex justify-center">
-          <div className="w-5 h-8 rounded-full border border-white/20 flex items-start justify-center p-1.5">
-            <div className="w-1 h-1.5 rounded-full bg-white/50 animate-bounce" />
-          </div>
-        </div>
-
       </section>
 
       {/* ── Mission ─────────────────────────────────────────────────────── */}

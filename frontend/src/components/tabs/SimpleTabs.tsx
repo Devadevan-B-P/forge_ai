@@ -510,7 +510,7 @@ export const MermaidTab = ({ bp }: { bp: Blueprint }) => {
 
   const getCleanMermaidCode = (rawCode: string): string => {
     if (!rawCode) return "";
-    let cleaned = rawCode.trim();
+    let cleaned = rawCode.trim().replace(/\r/g, "");
     if (cleaned.startsWith("```mermaid")) {
       cleaned = cleaned.substring(10).trim();
     } else if (cleaned.startsWith("```")) {
@@ -529,12 +529,8 @@ export const MermaidTab = ({ bp }: { bp: Blueprint }) => {
     try {
       const latin1 = unescape(encodeURIComponent(code));
       const base64 = btoa(latin1);
-      // Make base64 URL-safe (base64url) to prevent division by caddy/nginx/browser paths
-      const base64Url = base64
-        .replace(/\+/g, "-")
-        .replace(/\//g, "_")
-        .replace(/=+$/, "");
-      imageUrl = "https://mermaid.ink/svg/" + base64Url;
+      // Use standard URL percent-encoding to escape + / and = safely
+      imageUrl = "https://mermaid.ink/svg/" + encodeURIComponent(base64);
     } catch (e) {
       console.error("Failed to generate Mermaid SVG link", e);
     }
