@@ -18,9 +18,9 @@ Instead of jumping straight to raw code, Forge AI focuses on designing a robust 
 - **Technical Architecture**: Recommends appropriate frameworks, libraries, testing suites, and tools customized for the project scope.
 - **Database Schema**: Normalization, field types, relationships, and **ready-to-run dialect-specific SQL scripts** (with an interactive *Generate SQL* button).
 - **REST API Design**: Path definitions, request/response models, validations, and **endpoint-specific code generator** (FastAPI or Express handler code).
+- **ReportLab Server-Side PDF Exporter**: Exposes a stateless API endpoint (`/api/blueprint/pdf`) to compile the generated blueprint into a high-fidelity PDF document on the server using ReportLab's Platypus flowable engine. Supports custom slate-themed page headers, dynamic page numbering ("Page X of Y"), tables for prompt analysis metadata, proper margins, and unicode character normalization.
 - **Docker & Deployment Specs**: Pre-configured `Dockerfile` structure and multi-tier deployment topology.
 - **AWS Infrastructure Maps**: Recommendations for ECS, RDS, S3, and CloudFront.
-- **Mermaid.js Diagrams**: Renders interactive ERDs, Sequence diagrams, and Architecture Flow maps directly in the browser.
 - **High-Performance "About" Page**: Features a scroll-based canvas blooming flower animation, dynamically hidden on mobile devices (screens < 768px) with GPU frame caching to prevent redraw overhead when stationary.
 - **Interactive Particle Physics**: Features a canvas-based flying particles loop generating subtle, interactive background visuals in the **Contact** and **Generator** pages.
 
@@ -169,6 +169,8 @@ forge-ai/
       schemas/auth.py            # User Auth models
       prompts/system_prompt.py   # System rules & strict JSON expectations for the AI
       services/groq_service.py   # Async Groq API requests with waterfall logic
+      services/pipeline.py       # Multi-dimensional LLM rate routing pipeline
+      services/pdf_generator.py  # ReportLab server-side PDF generator service
       routers/blueprint.py       # Blueprint generator routes
       routers/generators.py      # Dialect SQL and Code snippet generator routes
       routers/history.py         # Saved user history routes
