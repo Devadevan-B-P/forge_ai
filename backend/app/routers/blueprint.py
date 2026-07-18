@@ -207,3 +207,18 @@ async def generate_stream(req: BlueprintRequest, current_user: dict = Depends(ge
 
     return StreamingResponse(sse_generator(), media_type="text/event-stream")
 
+
+@router.post("/pdf")
+async def generate_pdf(req: dict, current_user: dict = Depends(get_current_user)):
+    from app.services.pdf_generator import generate_pdf_report
+    from fastapi import Response
+    try:
+        pdf_bytes = generate_pdf_report(req)
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={"Content-Disposition": "attachment; filename=product_requirements_document.pdf"}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"PDF generation failed: {str(e)}")
+

@@ -19,7 +19,6 @@ import {
   type HistoryItem,
 } from "../services/api";
 import type { Blueprint, BlueprintConfig } from "../types/blueprint";
-import { jsPDF } from "jspdf";
 import { useAuth } from "../hooks/useAuth";
 
 function parsePartialJson(partialJson: string) {
@@ -590,201 +589,37 @@ export default function Generator() {
     URL.revokeObjectURL(url);
   };
 
-  const handleExportPrd = () => {
+  const handleExportPrd = async () => {
     if (!blueprint) return;
 
-    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-    const pageWidth = 210, pageHeight = 297, margin = 20, contentWidth = pageWidth - 2 * margin;
-    let y = 20;
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch("/api/blueprint/pdf", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": token ? `Bearer ${token}` : "",
+        },
+        body: JSON.stringify(blueprint),
+      });
 
-    let currentFontType = "helvetica";
-    let currentFontStyle = "normal";
-    let currentFontSize = 10;
-    let currentFontColor = [51, 65, 85]; // [R, G, B]
-
-    const checkPageBreak = (neededHeight: number) => {
-      if (y + neededHeight > pageHeight - margin) {
-        doc.addPage();
-        y = 20;
-        // Re-apply style state as doc.addPage() resets styles in jsPDF
-        doc.setFont(currentFontType, currentFontStyle);
-        doc.setFontSize(currentFontSize);
-        doc.setTextColor(currentFontColor[0], currentFontColor[1], currentFontColor[2]);
+      if (!response.ok) {
+        throw new Error("Failed to generate PDF from server");
       }
-    };
 
-    const addText = (text: string, size = 10, isBold = false, color = "#334155") => {
-      currentFontStyle = isBold ? "bold" : "normal";
-      currentFontSize = size;
-      const r = parseInt(color.slice(1, 3), 16);
-      const g = parseInt(color.slice(3, 5), 16);
-      const b = parseInt(color.slice(5, 7), 16);
-      currentFontColor = [r, g, b];
-
-      doc.setFont(currentFontType, currentFontStyle);
-      doc.setFontSize(currentFontSize);
-      doc.setTextColor(r, g, b);
-
-      const lines = doc.splitTextToSize(text, contentWidth);
-      const lineHeight = size * 0.45;
-      lines.forEach((line: string) => {
-        checkPageBreak(lineHeight);
-        doc.text(line, margin, y);
-        y += lineHeight;
-      });
-      y += 1.8;
-    };
-
-    const addHeading = (level: 1 | 2 | 3, text: string) => {
-      const size = level === 1 ? 14 : level === 2 ? 11 : 9.5;
-      const color = level === 1 ? "#1e293b" : level === 2 ? "#7c3aed" : "#0f172a";
-      const threshold = level === 1 ? 32 : level === 2 ? 22 : 16;
-      checkPageBreak(threshold);
-      y += level === 1 ? 5 : level === 2 ? 3.5 : 2;
-      addText(text, size, true, color);
-      if (level === 1) {
-        doc.setDrawColor(124, 92, 255);
-        doc.setLineWidth(0.4);
-        doc.line(margin, y, margin + 40, y);
-        y += 5.5;
-      }
-    };
-
-    const addBullet = (text: string) => {
-      currentFontStyle = "normal";
-      currentFontSize = 9.5;
-      currentFontColor = [51, 65, 85];
-
-      doc.setFont(currentFontType, currentFontStyle);
-      doc.setFontSize(currentFontSize);
-      doc.setTextColor(51, 65, 85);
-
-      const lines = doc.splitTextToSize(text, contentWidth - 6);
-      const lineHeight = 9.5 * 0.45;
-      lines.forEach((line: string, index: number) => {
-        checkPageBreak(lineHeight);
-        if (index === 0) {
-          doc.text("•", margin, y);
-          doc.text(line, margin + 5, y);
-        } else {
-          doc.text(line, margin + 5, y);
-        }
-        y += lineHeight;
-      });
-      y += 1.5;
-    };
-
-    const productName = blueprint?.promptAnalysis?.projectName || extractProductName(idea);
-
-    addText("PRODUCT SPECIFICATION & REQUIREMENTS (PRD)", 9, true, "#7c3aed");
-    y += 1.5;
-    addText(productName, 20, true, "#1e293b");
-    y += 3;
-    addText("Generated dynamically by Forge AI software architect solution.", 9.5, false, "#64748b");
-    y += 6;
-
-    // Prompt Analysis Section
-    addHeading(1, "Prompt Analysis");
-    const pa = blueprint.promptAnalysis || {};
-    addBullet("Industry: " + (pa.industry || "N/A"));
-    addBullet("Business Type: " + (pa.businessType || "N/A"));
-    addBullet("Complexity: " + (pa.complexity || "N/A"));
-    addBullet("Expected Users: " + (pa.expectedUsers || "N/A"));
-    addBullet("Scale: " + (pa.scale || "N/A"));
-    addBullet("Budget: " + (pa.budget || "N/A"));
-    addBullet("Cloud Requirements: " + (pa.cloudRequirements || "N/A"));
-    addBullet("Compliance: " + (pa.compliance || "N/A"));
-    addBullet("Estimated Timeline: " + (pa.estimatedTimeline || "N/A"));
-    y += 4;
-
-    // PRD Sections
-    const prd = blueprint.prd || {};
-
-    // 1. Document Metadata
-    addHeading(1, "1. Document Metadata");
-    const dm = prd.documentMetadata || {};
-    addBullet("Ownership: " + (dm.ownership || "N/A"));
-    addBullet("Deployment Target: " + (dm.deploymentTarget || "N/A"));
-    addBullet("Version Status: " + (dm.versionStatus || "N/A"));
-    y += 2;
-
-    // 2. Executive Summary & Objectives
-    addHeading(1, "2. Executive Summary & Objectives");
-    addText(prd.executiveSummary || "N/A", 9.5, false, "#334155");
-    y += 2;
-
-    // 3. User Stories
-    addHeading(1, "3. User Stories");
-    if (prd.userStories && prd.userStories.length > 0) {
-      prd.userStories.forEach((s) => {
-        addText(s.persona, 10, true, "#0f172a");
-        addText(s.story, 9.5, false, "#475569");
-        y += 1.5;
-      });
-    } else {
-      addText("N/A", 9.5, false, "#475569");
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "product_requirements_document.pdf";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to export PDF: " + (err instanceof Error ? err.message : String(err)));
     }
-    y += 2;
-
-    // 4. Business Rules
-    addHeading(1, "4. Business Rules");
-    if (prd.businessRules && prd.businessRules.length > 0) {
-      prd.businessRules.forEach((r) => {
-        addBullet(r.rule);
-      });
-    } else {
-      addText("N/A", 9.5, false, "#475569");
-    }
-    y += 2;
-
-    // 5. Acceptance Criteria
-    addHeading(1, "5. Acceptance Criteria");
-    if (prd.acceptanceCriteria && prd.acceptanceCriteria.length > 0) {
-      prd.acceptanceCriteria.forEach((ac) => {
-        addText(ac.feature, 10, true, "#0f172a");
-        ac.criteria?.forEach((crit) => {
-          addBullet(crit);
-        });
-        y += 1;
-      });
-    } else {
-      addText("N/A", 9.5, false, "#475569");
-    }
-    y += 2;
-
-    // 6. User Experience & Design Links
-    addHeading(1, "6. User Experience & Design Links");
-    const ux = prd.uxDesign || {};
-    addText("Interface Overview:", 9.5, true, "#0f172a");
-    addText(ux.interfaceOverview || "N/A", 9.5, false, "#475569");
-    y += 1.5;
-    addText("Workspace Layout Description:", 9.5, true, "#0f172a");
-    addText(ux.layoutDescription || "N/A", 9.5, false, "#475569");
-    y += 2;
-
-    // 7. Business Flow
-    addHeading(1, "7. Business Flow");
-    if (prd.businessFlow && prd.businessFlow.length > 0) {
-      prd.businessFlow.forEach((f) => {
-        addBullet(f);
-      });
-    } else {
-      addText("N/A", 9.5, false, "#475569");
-    }
-    y += 2;
-
-    // 8. System Flow
-    addHeading(1, "8. System Flow");
-    if (prd.systemFlow && prd.systemFlow.length > 0) {
-      prd.systemFlow.forEach((f) => {
-        addBullet(f);
-      });
-    } else {
-      addText("N/A", 9.5, false, "#475569");
-    }
-    y += 2;
-
-    doc.save("product_requirements_document.pdf");
   };
 
   const simulatedStack = getSimulatedStack(idea, config);
