@@ -508,12 +508,33 @@ export const MermaidTab = ({ bp }: { bp: Blueprint }) => {
     { key: "deploymentDiagram" as const, label: "Deployment Diagram" },
   ];
 
-  const code = mermaidData[activeDiag]?.trim();
+  const getCleanMermaidCode = (rawCode: string): string => {
+    if (!rawCode) return "";
+    let cleaned = rawCode.trim();
+    if (cleaned.startsWith("```mermaid")) {
+      cleaned = cleaned.substring(10).trim();
+    } else if (cleaned.startsWith("```")) {
+      cleaned = cleaned.substring(3).trim();
+    }
+    if (cleaned.endsWith("```")) {
+      cleaned = cleaned.substring(0, cleaned.length - 3).trim();
+    }
+    return cleaned;
+  };
+
+  const code = getCleanMermaidCode(mermaidData[activeDiag]);
   
   let imageUrl = "";
   if (code) {
     try {
-      imageUrl = "https://mermaid.ink/svg/" + btoa(unescape(encodeURIComponent(code)));
+      const latin1 = unescape(encodeURIComponent(code));
+      const base64 = btoa(latin1);
+      // Make base64 URL-safe (base64url) to prevent division by caddy/nginx/browser paths
+      const base64Url = base64
+        .replace(/\+/g, "-")
+        .replace(/\//g, "_")
+        .replace(/=+$/, "");
+      imageUrl = "https://mermaid.ink/svg/" + base64Url;
     } catch (e) {
       console.error("Failed to generate Mermaid SVG link", e);
     }
