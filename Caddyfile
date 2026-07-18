@@ -2,7 +2,7 @@
     email {$CADDY_EMAIL}
 }
 
-forge-ai-dev.cloud-ip.cc {
+localhost, forge-ai-dev.cloud-ip.cc {
     encode gzip
 
     reverse_proxy frontend:80

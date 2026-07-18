@@ -81,7 +81,7 @@ def _get_async_client() -> AsyncGroq:
 # Models NOT in this set use plain-text mode; the system prompt instructs them
 # to return raw JSON so parsing still works without the API-level enforcement.
 JSON_MODE_SUPPORTED = {
-    "qwen/qwen3-32b",
+    "qwen/qwen3.6-27b",
     "llama-3.3-70b-versatile",
 }
 

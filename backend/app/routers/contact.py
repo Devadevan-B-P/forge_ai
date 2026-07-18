@@ -34,24 +34,25 @@ async def send_contact_message(req: ContactRequest):
 
         async def send_email(template_id: str):
             payload = {
-                "service_id": settings.emailjs_service_id,
-                "template_id": template_id,
-                "user_id": settings.emailjs_public_key,
+                "service_id": settings.emailjs_service_id.strip(),
+                "template_id": template_id.strip(),
+                "user_id": settings.emailjs_public_key.strip(),
                 "template_params": template_params,
             }
             if settings.emailjs_private_key:
-                payload["accessToken"] = settings.emailjs_private_key
+                payload["accessToken"] = settings.emailjs_private_key.strip()
 
             async with httpx.AsyncClient() as client:
+                print(f"[DEBUG] Dispatching EmailJS template: {template_id.strip()}")
                 res = await client.post(url, json=payload, timeout=10.0)
                 if res.status_code != 200:
-                    raise RuntimeError(f"EmailJS error ({res.status_code}): {res.text}")
+                    raise RuntimeError(f"Template {template_id.strip()} failed with error ({res.status_code}): {res.text}")
 
         try:
             tasks = []
-            if settings.emailjs_contact_template_id:
+            if settings.emailjs_contact_template_id and settings.emailjs_contact_template_id.strip():
                 tasks.append(send_email(settings.emailjs_contact_template_id))
-            if settings.emailjs_auto_reply_template_id:
+            if settings.emailjs_auto_reply_template_id and settings.emailjs_auto_reply_template_id.strip():
                 tasks.append(send_email(settings.emailjs_auto_reply_template_id))
 
             if tasks:
