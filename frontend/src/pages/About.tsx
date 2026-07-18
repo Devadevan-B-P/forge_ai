@@ -27,8 +27,8 @@ import SpotlightCard from "../components/vendor/SpotlightCard";
 import BorderGlow from "../components/vendor/BorderGlow";
 import BlurText from "../components/vendor/BlurText";
 import ShinyText from "../components/vendor/ShinyText";
-import AnimatedContent from "../components/vendor/AnimatedContent";
-import ShapeBlur from "../components/vendor/ShapeBlur";
+import AnimatedContent from "../components/AnimatedContent";
+import SpecularButton from "../components/vendor/SpecularButton";
 import ScrollFloat from "../components/vendor/ScrollFloat";
 import VariableProximity from "../components/vendor/VariableProximity";
 import { useInView } from "../hooks/useInView";
@@ -130,17 +130,13 @@ export default function About() {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    // Only set up scroll animation on PC/Laptops (md screen size >= 768px)
-    const isDesktop = () => window.innerWidth >= 768;
-    if (!isDesktop()) return;
-
     let targetFrame = 0;
     let currentFrame = 0;
     const lerpFactor = 0.06; // Highly smooth deceleration factor
     let animationFrameId: number;
 
     const handleScroll = () => {
-      if (!isDesktop()) return;
+      if (window.innerWidth < 768) return;
       const video = videoRef.current;
       if (!video || !video.duration) return;
 
@@ -154,16 +150,22 @@ export default function About() {
 
     const updateVideoSeek = () => {
       const video = videoRef.current;
-      if (video && video.duration) {
+      if (window.innerWidth >= 768 && video && video.duration) {
         // Smoothly interpolate current frame position
         currentFrame += (targetFrame - currentFrame) * lerpFactor;
         
         const frameDuration = video.duration / 150;
         const targetTime = currentFrame * frameDuration;
         
-        // Seek only if the target timestamp is a meaningful change from current position
-        if (Math.abs(video.currentTime - targetTime) > (frameDuration / 4)) {
-          video.currentTime = targetTime;
+        // Seek only if targetTime is a meaningful change and video isn't already seeking (prevents Safari/Firefox lag)
+        if (!video.seeking && Math.abs(video.currentTime - targetTime) > (frameDuration / 4)) {
+          try {
+            if (targetTime >= 0 && targetTime <= video.duration) {
+              video.currentTime = targetTime;
+            }
+          } catch (e) {
+            console.warn("Video seeking failed:", e);
+          }
         }
       }
       animationFrameId = requestAnimationFrame(updateVideoSeek);
@@ -172,9 +174,18 @@ export default function About() {
     // Listen to scroll events
     window.addEventListener("scroll", handleScroll, { passive: true });
     
+    // Listen to resize events
+    const handleResize = () => {
+      handleScroll();
+    };
+    window.addEventListener("resize", handleResize);
+    
     // Ensure initial scroll position is synced once video metadata is available
     const video = videoRef.current;
     if (video) {
+      if (video.readyState >= 1) {
+        handleScroll();
+      }
       video.addEventListener("loadedmetadata", handleScroll);
     }
     
@@ -186,6 +197,7 @@ export default function About() {
 
     return () => {
       window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", handleResize);
       if (video) {
         video.removeEventListener("loadedmetadata", handleScroll);
       }
@@ -214,12 +226,14 @@ export default function About() {
       {/* Scroll-driven blooming flower background video */}
       <video
         ref={videoRef}
-        src="/flower.mp4"
         playsInline
         muted
         preload="auto"
         className="hidden md:block fixed inset-0 w-screen h-screen object-cover z-0 pointer-events-none opacity-20"
-      />
+      >
+        <source src="/flower.mp4" type="video/mp4" />
+        Your browser does not support the video tag.
+      </video>
 
       {/* Content wrapper */}
       <div className="relative z-10">
@@ -514,7 +528,7 @@ export default function About() {
       <section className="px-6 py-24 sm:py-28 max-w-5xl mx-auto">
         <div
           ref={visionRef.ref as React.RefObject<HTMLDivElement>}
-          className={`reveal reveal-scale ${visionRef.inView ? "in-view" : ""}`}
+          className="w-full"
         >
           <BorderGlow
             edgeSensitivity={35}
@@ -524,7 +538,7 @@ export default function About() {
             glowRadius={60}
             glowIntensity={1.2}
             coneSpread={30}
-            animated={true}
+            animated={visionRef.inView}
             colors={['#7c5cff', '#4f9dff', '#5cf0d0']}
             className="w-full"
           >
@@ -547,33 +561,34 @@ export default function About() {
           ref={ctaRef.ref as React.RefObject<HTMLDivElement>}
           className={`reveal reveal-up ${ctaRef.inView ? "in-view" : ""} glass rounded-3xl p-10 sm:p-14 relative overflow-hidden`}
         >
-          {/* Interactive ShapeBlur shader background */}
-          <div className="absolute inset-0 z-0 opacity-40 pointer-events-none">
-            <ShapeBlur
-              variation={0}
-              pixelRatioProp={window.devicePixelRatio || 1}
-              shapeSize={2.0}
-              roundness={0.5}
-              borderSize={0.03}
-              circleSize={0.4}
-              circleEdge={0.8}
-            />
-          </div>
           <div className="absolute -bottom-1/2 left-1/2 -translate-x-1/2 w-[70%] h-[80%] rounded-full bg-accent/15 blur-[80px] pointer-events-none" />
-          <div className="relative z-10">
+          <div className="relative z-10 flex flex-col items-center">
             <h2 className="font-display text-2xl sm:text-3xl text-white font-semibold mb-4">
               Build Better Before You Build Bigger
             </h2>
             <p className="text-slate-400 text-sm sm:text-base mb-8 max-w-md mx-auto">
               Every great application starts with a solid blueprint. Forge AI helps you create that foundation—turning ideas into clear, scalable, production-ready software architectures.
             </p>
-            <button
+            <SpecularButton
               onClick={() => navigate("/generator")}
-              className="group inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-accent text-white font-medium shadow-glow hover:brightness-110 transition"
+              size="lg"
+              radius={9999}
+              tint="#7c5cff"
+              tintOpacity={0.12}
+              blur={12}
+              textColor="#ffffff"
+              lineColor="#ffffff"
+              baseColor="#7c5cff"
+              intensity={1.8}
+              thickness={1.5}
+              followMouse={true}
+              proximity={300}
             >
-              Start Building
-              <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
-            </button>
+              <span className="flex items-center gap-2">
+                Start Building
+                <ArrowRight size={16} />
+              </span>
+            </SpecularButton>
           </div>
         </div>
       </section>

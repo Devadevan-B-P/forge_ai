@@ -144,6 +144,9 @@ const BorderGlow = ({
 
   const handlePointerMove = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
+      // Disable hover animations on mobile viewports (< 768px)
+      if (window.innerWidth < 768) return;
+
       const card = cardRef.current;
       if (!card) return;
 
@@ -161,7 +164,8 @@ const BorderGlow = ({
   );
 
   useEffect(() => {
-    if (!animated || !cardRef.current) return;
+    // Disable entry animations on mobile viewports (< 768px)
+    if (!animated || !cardRef.current || window.innerWidth < 768) return;
     const card = cardRef.current;
     const angleStart = 110;
     const angleEnd = 465;

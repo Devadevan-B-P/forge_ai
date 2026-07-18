@@ -67,6 +67,7 @@ html.lenis, html.lenis body {
 .glass {
   background: rgba(18, 21, 28, 0.6);
   backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
@@ -190,6 +191,10 @@ html.lenis, html.lenis body {
 .shadow-glow { box-shadow: 0 0 40px -10px rgba(124,92,255,0.35); }
 
 /* ─── Scrollbar ──────────────────────────────────────────────────────── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #2a2f3b transparent;
+}
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-thumb { background: #2a2f3b; border-radius: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }

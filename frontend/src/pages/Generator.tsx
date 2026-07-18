@@ -305,6 +305,7 @@ export default function Generator() {
       }
     };
 
+    let animationFrameId: number;
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       particles.forEach((p) => {
@@ -321,7 +322,7 @@ export default function Generator() {
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         ctx.fill();
       });
-      requestAnimationFrame(animate);
+      animationFrameId = requestAnimationFrame(animate);
     };
 
     init();
@@ -335,6 +336,7 @@ export default function Generator() {
 
     return () => {
       window.removeEventListener("resize", handleResize);
+      cancelAnimationFrame(animationFrameId);
     };
   }, []);
 

@@ -3,15 +3,21 @@ import { motion } from "framer-motion";
 import "./VariableProximity.css";
 
 function useAnimationFrame(callback: () => void) {
+  const callbackRef = useRef(callback);
+
+  useEffect(() => {
+    callbackRef.current = callback;
+  });
+
   useEffect(() => {
     let frameId: number;
     const loop = () => {
-      callback();
+      callbackRef.current();
       frameId = requestAnimationFrame(loop);
     };
     frameId = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(frameId);
-  }, [callback]);
+  }, []);
 }
 
 function useMousePositionRef(containerRef: React.RefObject<HTMLDivElement | null>) {

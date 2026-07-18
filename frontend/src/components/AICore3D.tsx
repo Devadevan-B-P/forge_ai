@@ -214,7 +214,7 @@ function Scene({ scrollProgress }: SceneProps) {
   const { camera } = useThree();
   const reducedMotion = useReducedMotion();
 
-  useFrame((state) => {
+  useFrame((state, delta) => {
     const time = state.clock.getElapsedTime();
     const pointer = state.pointer; // Mouse range [-1, 1]
 
@@ -238,7 +238,7 @@ function Scene({ scrollProgress }: SceneProps) {
     // Continuous core rotation (~3 degrees per second + speed up on scroll)
     const scrollMultiplier = 1 + scrollProgress.current * 1.8;
     const baseRotationSpeed = 0.052 * (reducedMotion ? 0.2 : 1);
-    coreRef.current.rotation.y += baseRotationSpeed * state.clock.getDelta() * scrollMultiplier;
+    coreRef.current.rotation.y += baseRotationSpeed * delta * scrollMultiplier;
 
     // Scale core smaller on scroll
     const targetScale = 1 - scrollProgress.current * 0.35;
@@ -318,6 +318,7 @@ export default function AICore3D({ scrollProgress }: { scrollProgress: React.Mut
       <Canvas
         camera={{ position: [0, 0, 3.2], fov: 45 }}
         gl={{ antialias: true, alpha: true }}
+        dpr={[1, 1.5]}
       >
         <ambientLight intensity={0.15} />
         {/* Soft custom key/fill/backlights */}

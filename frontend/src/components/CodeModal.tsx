@@ -35,7 +35,7 @@ export default function CodeModal({
   return createPortal(
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6"
-      style={{ background: "rgba(5,5,5,0.85)", backdropFilter: "blur(12px)" }}
+      style={{ background: "rgba(5,5,5,0.85)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
