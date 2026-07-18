@@ -18,6 +18,7 @@ class BlueprintRequest(BaseModel):
 
 
 class PromptAnalysis(BaseModel):
+    projectName: str = Field(..., description="Creative name for the application")
     industry: str
     businessType: str
     complexity: str
@@ -113,6 +114,34 @@ class BlueprintResponse(BaseModel):
     database: dict[str, Any]
     apis: list[dict[str, Any]]
     folderStructure: dict[str, Any]
+    awsArchitecture: dict[str, Any]
+    dockerArchitecture: dict[str, Any]
+    timeline: list[dict[str, Any]]
+    security: list[str]
+    scalability: list[str]
+    futureEnhancements: list[str]
+    monitoring: Monitoring
+    estimatedCost: EstimatedCost
+    aiRecommendations: AiRecommendations
+    mermaid: Mermaid
+
+
+class StageAResponse(BaseModel):
+    promptAnalysis: PromptAnalysis
+    decisions: list[Decision]
+    overview: str
+    features: dict[str, list[str]]
+    techStack: dict[str, Any]
+    database: dict[str, Any]
+    apis: list[dict[str, Any]]
+    folderStructure: dict[str, Any]
+
+
+class StageBResponse(BaseModel):
+    prd: PrdStructure
+
+
+class StageCResponse(BaseModel):
     awsArchitecture: dict[str, Any]
     dockerArchitecture: dict[str, Any]
     timeline: list[dict[str, Any]]

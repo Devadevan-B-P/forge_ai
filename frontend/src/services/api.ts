@@ -36,6 +36,7 @@ export interface HistoryItem {
   config: BlueprintConfig;
   created_at: string;
   name?: string | null;
+  projectName?: string | null;
 }
 
 export async function generateBlueprint(

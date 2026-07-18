@@ -42,6 +42,7 @@ export interface TimelinePhase {
 }
 
 export interface PromptAnalysis {
+  projectName: string;
   industry: string;
   businessType: string;
   complexity: string;

@@ -6,7 +6,7 @@ from app.services.pipeline import run_generator_pipeline, run_generator_pipeline
 
 # A dummy valid JSON payload for the models to return
 DUMMY_BLUEPRINT = {
-    "promptAnalysis": {"industry": "Tech"},
+    "promptAnalysis": {"projectName": "TestApp", "industry": "Tech"},
     "decisions": [],
     "prd": {"executiveSummary": "test"},
     "overview": "test overview",
@@ -60,20 +60,20 @@ async def test_waterfall_all_succeed(monkeypatch):
     # We pass a very small prompt so it doesn't get proactively skipped
     res = await run_generator_pipeline("Simple app idea", {})
     assert res == DUMMY_BLUEPRINT
-    # Verify it was called with 'qwen/qwen3.6-27b'
+    # Verify it was called with 'llama-3.3-70b-versatile'
     assert mock_create.call_count == 1
-    assert mock_create.call_args[1]["model"] == "qwen/qwen3.6-27b"
+    assert mock_create.call_args[1]["model"] == "llama-3.3-70b-versatile"
 
 @pytest.mark.asyncio
 async def test_waterfall_rate_limit_fallback(monkeypatch):
-    """If model 1 (Qwen) raises a rate limit error, it should try model 2 (GPT-OSS)."""
+    """If model 1 (Llama) raises a rate limit error, it should try model 2 (GPT-OSS)."""
     mock_client = MagicMock()
     
     calls = []
     async def mock_create_fn(**kwargs):
         model = kwargs["model"]
         calls.append(model)
-        if model == "qwen/qwen3.6-27b":
+        if model == "llama-3.3-70b-versatile":
             raise groq_sdk.RateLimitError(
                 message="Rate limit hit",
                 response=MagicMock(headers={"retry-after": "1"}),
@@ -87,19 +87,19 @@ async def test_waterfall_rate_limit_fallback(monkeypatch):
     res = await run_generator_pipeline("Simple app idea", {})
     assert res == DUMMY_BLUEPRINT
     assert len(calls) == 2
-    assert calls[0] == "qwen/qwen3.6-27b"
+    assert calls[0] == "llama-3.3-70b-versatile"
     assert calls[1] == "openai/gpt-oss-120b"
 
 @pytest.mark.asyncio
 async def test_waterfall_request_too_large_fallback(monkeypatch):
-    """If model 1 (Qwen) and model 2 (GPT-OSS) fail with TPM errors, it should try model 3 (Llama)."""
+    """If model 1 (Llama) and model 2 (GPT-OSS) fail with TPM errors, it should try model 3 (Qwen)."""
     mock_client = MagicMock()
     
     calls = []
     async def mock_create_fn(**kwargs):
         model = kwargs["model"]
         calls.append(model)
-        if model in ("qwen/qwen3.6-27b", "openai/gpt-oss-120b"):
+        if model in ("llama-3.3-70b-versatile", "openai/gpt-oss-120b"):
             # Mock a 413 APIStatusError
             raise groq_sdk.APIStatusError(
                 message="Request too large",
@@ -114,9 +114,9 @@ async def test_waterfall_request_too_large_fallback(monkeypatch):
     res = await run_generator_pipeline("Simple app idea", {})
     assert res == DUMMY_BLUEPRINT
     assert len(calls) == 3
-    assert calls[0] == "qwen/qwen3.6-27b"
+    assert calls[0] == "llama-3.3-70b-versatile"
     assert calls[1] == "openai/gpt-oss-120b"
-    assert calls[2] == "llama-3.3-70b-versatile"
+    assert calls[2] == "qwen/qwen3.6-27b"
 
 @pytest.mark.asyncio
 async def test_waterfall_proactive_token_skip(monkeypatch):
@@ -126,13 +126,13 @@ async def test_waterfall_proactive_token_skip(monkeypatch):
     mock_client.chat.completions.create = mock_create
     monkeypatch.setattr("app.services.pipeline._get_async_client", lambda: mock_client)
     
-    massive_prompt = "x" * 25000
+    massive_prompt = "x" * 5000
     res = await run_generator_pipeline(massive_prompt, {})
     assert res == DUMMY_BLUEPRINT
     # Verify it skipped Qwen and GPT-OSS entirely and only called Llama
     assert mock_create.call_count == 1
     assert mock_create.call_args[1]["model"] == "llama-3.3-70b-versatile"
-    assert mock_create.call_args[1]["max_tokens"] == 3350
+    assert mock_create.call_args[1]["max_tokens"] == 8322
 
 @pytest.mark.asyncio
 async def test_waterfall_stream_fallback(monkeypatch):
@@ -159,7 +159,7 @@ async def test_waterfall_stream_fallback(monkeypatch):
     async def mock_create_fn(**kwargs):
         model = kwargs["model"]
         calls.append(model)
-        if model == "qwen/qwen3.6-27b":
+        if model == "llama-3.3-70b-versatile":
             raise groq_sdk.RateLimitError("Rate limit", response=MagicMock(headers={}), body={})
         return AsyncStream(json.dumps(DUMMY_BLUEPRINT))
  
@@ -170,12 +170,12 @@ async def test_waterfall_stream_fallback(monkeypatch):
     async for event_type, payload in run_generator_pipeline_stream("Simple app", {}):
         events.append((event_type, payload))
         
-    # Qwen should have failed and switched to GPT-OSS
+    # Llama should have failed and switched to GPT-OSS
     assert len(calls) == 2
-    assert calls[0] == "qwen/qwen3.6-27b"
+    assert calls[0] == "llama-3.3-70b-versatile"
     assert calls[1] == "openai/gpt-oss-120b"
     
-    # First model event should announce Qwen3.6 27B, then GPT-OSS 120B, then chunks
-    assert events[0] == ("model", "Qwen3.6 27B")
+    # First model event should announce Llama 3.3 70B, then GPT-OSS 120B, then chunks
+    assert events[0] == ("model", "Llama 3.3 70B")
     assert events[1] == ("model", "GPT-OSS 120B")
     assert any(e[0] == "chunk" for e in events)

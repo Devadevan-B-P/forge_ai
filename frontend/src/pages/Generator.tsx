@@ -269,6 +269,7 @@ export default function Generator() {
   const [editingName, setEditingName] = useState<string>("");
   /** Which AI model is currently being used for streaming generation */
   const [activeModel, setActiveModel] = useState<string | null>(null);
+  const [stageLabel, setStageLabel] = useState<string | null>(null);
 
   const typingTimeoutRef = useRef<number | null>(null);
   const outputRef = useRef<HTMLDivElement>(null);
@@ -480,6 +481,7 @@ export default function Generator() {
     setCachedSql(null);
     setCachedApiCodes({});
     setActiveModel(null);
+    setStageLabel(null);
 
     // Scroll to loader section immediately to show the loading screen/progress
     setTimeout(() => outputRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
@@ -535,7 +537,9 @@ export default function Generator() {
             continue;
           }
 
-          if (parsed.type === "model") {
+          if (parsed.type === "stage") {
+            setStageLabel(parsed.label);
+          } else if (parsed.type === "model") {
             // Backend is switching / confirming which model is active
             accumulatedText = "";
             setActiveModel(parsed.name);
@@ -549,8 +553,10 @@ export default function Generator() {
           } else if (parsed.type === "done") {
             setBlueprint(parsed.blueprint);
             setActiveHistoryId(parsed.id);
+            setStageLabel(null);
           } else if (parsed.type === "error") {
             // Server explicitly reported an error — surface it to the user
+            setStageLabel(null);
             throw new Error(parsed.message);
           }
         }
@@ -569,6 +575,7 @@ export default function Generator() {
     } finally {
       abortControllerRef.current = null;
       setLoading(false);
+      setStageLabel(null);
     }
   };
 
@@ -667,7 +674,7 @@ export default function Generator() {
       y += 1.5;
     };
 
-    const productName = extractProductName(idea);
+    const productName = blueprint?.promptAnalysis?.projectName || extractProductName(idea);
 
     addText("PRODUCT SPECIFICATION & REQUIREMENTS (PRD)", 9, true, "#7c3aed");
     y += 1.5;
@@ -891,14 +898,14 @@ export default function Generator() {
                           />
                         ) : (
                           <span className="text-[11px] font-medium truncate flex-1 leading-tight">
-                            {item.name || extractProductName(item.idea)}
+                            {item.name || item.projectName || extractProductName(item.idea)}
                           </span>
                         )}
                       </div>
                       {editingHistoryId !== item.id && (
                         <div className="flex items-center gap-1 shrink-0">
                           <button
-                            onClick={(e) => handleStartRename(e, item.id, item.name || extractProductName(item.idea))}
+                            onClick={(e) => handleStartRename(e, item.id, item.name || item.projectName || extractProductName(item.idea))}
                             className="text-[#9CA3AF]/50 hover:text-[#5FA9FF] p-0.5 rounded transition-colors group-hover:opacity-100 opacity-0"
                             title="Rename project"
                           >
@@ -1254,8 +1261,10 @@ export default function Generator() {
                 <div className="flex items-center gap-3">
                   <Loader2 className="animate-spin text-[#5FA9FF]" size={20} />
                   <div>
-                    <h3 className="text-sm font-semibold text-white">Architecting System...</h3>
-                    <p className="text-[10px] text-slate-400">Please wait while the AI models design your solution</p>
+                    <h3 className="text-sm font-semibold text-white">{stageLabel || "Architecting System..."}</h3>
+                    <p className="text-[10px] text-slate-400">
+                      {stageLabel ? "Generating the selected blueprint partition" : "Please wait while the AI models design your solution"}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">

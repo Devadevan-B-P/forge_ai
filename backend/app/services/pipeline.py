@@ -5,7 +5,13 @@ from groq import AsyncGroq
 from typing import AsyncGenerator
 
 from app.core.config import settings, GROQ_MODEL_WATERFALL
-from app.prompts.system_prompt import BLUEPRINT_SYSTEM_PROMPT, build_user_prompt
+from app.prompts.system_prompt import (
+    BLUEPRINT_SYSTEM_PROMPT,
+    build_user_prompt,
+    STAGE_A_SYSTEM_PROMPT,
+    STAGE_B_SYSTEM_PROMPT,
+    STAGE_C_SYSTEM_PROMPT,
+)
 
 _async_client: AsyncGroq | None = None
 _redis_client = None
@@ -136,17 +142,26 @@ async def _call_model_async(
         kwargs["response_format"] = {"type": "json_object"}
 
     response = await client.chat.completions.create(**kwargs)
-    return json.loads(response.choices[0].message.content.strip())
+    choice = response.choices[0]
+    finish_reason = getattr(choice, "finish_reason", "stop")
+    if finish_reason == "length":
+        raise RuntimeError("json_validate_failed: response truncated by max_tokens")
+    return json.loads(choice.message.content.strip())
 
 
-async def run_generator_pipeline(idea: str, config: dict) -> dict:
-    """Non-streaming pipeline that tries models in waterfall order."""
-    prompt = build_user_prompt(idea, config)
-    estimated_input_tokens = (len(prompt) + len(BLUEPRINT_SYSTEM_PROMPT)) // 4
+async def _run_stage(
+    idea: str,
+    config: dict,
+    system_prompt: str,
+    context: dict | None = None,
+    min_usable_output: int = 2000
+) -> dict:
+    """Runs a single stage using the waterfall logic."""
+    prompt = build_user_prompt(idea, config, context=context)
+    estimated_input_tokens = (len(prompt) + len(system_prompt)) // 4
     last_exc: Exception | None = None
 
     for model_id, model_name, max_tokens, tpm_limit in GROQ_MODEL_WATERFALL:
-        # Check if the input size itself exceeds the total model TPM capacity
         if estimated_input_tokens >= tpm_limit:
             print(f"[INFO] Proactively skipping {model_name} (input size {estimated_input_tokens} >= limit {tpm_limit})")
             continue
@@ -154,7 +169,6 @@ async def run_generator_pipeline(idea: str, config: dict) -> dict:
         # Dynamic max_tokens capping logic with safety buffer
         safety_buffer = 500
         safe_tpm_limit = tpm_limit - safety_buffer
-        min_usable_output = 2000
         active_max_tokens = max_tokens
         if estimated_input_tokens + max_tokens > safe_tpm_limit:
             remaining_budget = safe_tpm_limit - estimated_input_tokens
@@ -179,8 +193,7 @@ async def run_generator_pipeline(idea: str, config: dict) -> dict:
 
         try:
             print(f"[INFO] Trying model: {model_name} ({model_id}, max_tokens={active_max_tokens})")
-            result = await _call_model_async(prompt, BLUEPRINT_SYSTEM_PROMPT, model_id, active_max_tokens)
-            # Success — log token usage to Redis
+            result = await _call_model_async(prompt, system_prompt, model_id, active_max_tokens)
             await _incr_model_token_usage(model_id, estimated_total_tokens)
             return result
         except Exception as exc:
@@ -194,29 +207,40 @@ async def run_generator_pipeline(idea: str, config: dict) -> dict:
     raise last_exc or RuntimeError("All models exhausted.")
 
 
-async def run_generator_pipeline_stream(
-    idea: str, config: dict
+async def run_generator_pipeline(idea: str, config: dict) -> dict:
+    """Waterfall generator route. Uses fast-path or staged fallback."""
+    prompt_size_estimate = len(build_user_prompt(idea, config)) // 4
+    SINGLE_CALL_THRESHOLD = 1500
+
+    if prompt_size_estimate < SINGLE_CALL_THRESHOLD:
+        # Fast path
+        return await _run_stage(idea, config, BLUEPRINT_SYSTEM_PROMPT, min_usable_output=4500)
+
+    # Slow path: staged generation
+    import asyncio
+    stage_a = await _run_stage(idea, config, STAGE_A_SYSTEM_PROMPT, min_usable_output=2000)
+    context = {"decisions": stage_a.get("decisions", []), "techStack": stage_a.get("techStack", {})}
+    
+    stage_b, stage_c = await asyncio.gather(
+        _run_stage(idea, config, STAGE_B_SYSTEM_PROMPT, context=context, min_usable_output=2000),
+        _run_stage(idea, config, STAGE_C_SYSTEM_PROMPT, context=context, min_usable_output=2000)
+    )
+    return {**stage_a, **stage_b, **stage_c}
+
+
+async def _run_stage_stream(
+    idea: str,
+    config: dict,
+    system_prompt: str,
+    context: dict | None = None,
+    min_usable_output: int = 2000
 ) -> AsyncGenerator[tuple[str, str], None]:
-    """Streaming pipeline with 3-model waterfall.
-
-    Yields (event_type, payload) tuples:
-      - ("model", model_name)     — model selected / switched
-      - ("chunk", text_fragment)  — streamed token chunk
-
-    Falls over to the next model on rate-limit, token-capacity, or
-    JSON-mode-not-supported errors, emitting a fresh "model" event each time.
-    """
-    prompt = build_user_prompt(idea, config)
-    estimated_input_tokens = (len(prompt) + len(BLUEPRINT_SYSTEM_PROMPT)) // 4
-    client = _get_async_client()
-    messages = [
-        {"role": "system", "content": BLUEPRINT_SYSTEM_PROMPT},
-        {"role": "user", "content": prompt},
-    ]
-
+    """Streams a single stage waterfall run."""
+    prompt = build_user_prompt(idea, config, context=context)
+    estimated_input_tokens = (len(prompt) + len(system_prompt)) // 4
     last_exc: Exception | None = None
+
     for model_id, model_name, max_tokens, tpm_limit in GROQ_MODEL_WATERFALL:
-        # Check if the input size itself exceeds the total model TPM capacity
         if estimated_input_tokens >= tpm_limit:
             print(f"[INFO] Proactively skipping {model_name} (input size {estimated_input_tokens} >= limit {tpm_limit})")
             continue
@@ -224,7 +248,6 @@ async def run_generator_pipeline_stream(
         # Dynamic max_tokens capping logic with safety buffer
         safety_buffer = 500
         safe_tpm_limit = tpm_limit - safety_buffer
-        min_usable_output = 2000
         active_max_tokens = max_tokens
         if estimated_input_tokens + max_tokens > safe_tpm_limit:
             remaining_budget = safe_tpm_limit - estimated_input_tokens
@@ -251,6 +274,11 @@ async def run_generator_pipeline_stream(
             print(f"[INFO] Streaming with model: {model_name} ({model_id}, max_tokens={active_max_tokens})")
             yield ("model", model_name)
 
+            client = _get_async_client()
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": prompt},
+            ]
             kwargs: dict = dict(
                 model=model_id,
                 messages=messages,
@@ -263,12 +291,22 @@ async def run_generator_pipeline_stream(
                 kwargs["response_format"] = {"type": "json_object"}
 
             response_stream = await client.chat.completions.create(**kwargs)
+            last_finish_reason = None
             async for chunk in response_stream:
-                content = chunk.choices[0].delta.content or ""
+                if chunk.choices:
+                    finish_reason = getattr(chunk.choices[0], "finish_reason", None)
+                    if finish_reason:
+                        last_finish_reason = finish_reason
+                    delta = getattr(chunk.choices[0], "delta", None)
+                    content = getattr(delta, "content", "") or ""
+                else:
+                    content = ""
                 if content:
                     yield ("chunk", content)
-            
-            # Stream completed successfully — log token usage and stop waterfall
+
+            if last_finish_reason == "length":
+                raise RuntimeError("json_validate_failed: response truncated by max_tokens")
+
             await _incr_model_token_usage(model_id, estimated_total_tokens)
             return
         except Exception as exc:
@@ -279,5 +317,40 @@ async def run_generator_pipeline_stream(
                 last_exc = exc
                 continue
             raise
+    raise last_exc or RuntimeError("All models exhausted.")
 
-    raise last_exc or RuntimeError("All models exhausted without producing a response.")
+
+async def run_generator_pipeline_stream(
+    idea: str, config: dict
+) -> AsyncGenerator[tuple[str, str], None]:
+    """Streaming entrypoint with single-call fast-path or staged fallback."""
+    prompt_size_estimate = len(build_user_prompt(idea, config)) // 4
+    SINGLE_CALL_THRESHOLD = 1500
+
+    if prompt_size_estimate < SINGLE_CALL_THRESHOLD:
+        # Fast path
+        async for event in _run_stage_stream(idea, config, BLUEPRINT_SYSTEM_PROMPT, min_usable_output=4500):
+            yield event
+        return
+
+    # Slow path: staged generation streaming
+    import asyncio
+    yield ("stage", "Analyzing your requirements...")
+    stage_a = await _run_stage(idea, config, STAGE_A_SYSTEM_PROMPT, min_usable_output=2000)
+
+    yield ("stage", "Drafting the PRD and infrastructure...")
+    context = {"decisions": stage_a.get("decisions", []), "techStack": stage_a.get("techStack", {})}
+    
+    # Run Stage B and Stage C concurrently. Stage B is the PRD, so we stream it live.
+    task_c = asyncio.create_task(_run_stage(idea, config, STAGE_C_SYSTEM_PROMPT, context=context, min_usable_output=2000))
+    
+    async for event in _run_stage_stream(idea, config, STAGE_B_SYSTEM_PROMPT, context=context, min_usable_output=2000):
+        yield event
+        
+    stage_c = await task_c
+
+    yield ("stage", "Finalizing your blueprint...")
+    # Merge Stage A and Stage C into one payload and yield as merge
+    merged_data = {**stage_a, **stage_c}
+    import json
+    yield ("merge", json.dumps(merged_data))

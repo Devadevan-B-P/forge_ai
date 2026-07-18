@@ -8,9 +8,9 @@ from typing import List
 # max_output_tokens is set conservatively below each model's TPM limit
 # so the total request (input ~2k tokens + output) stays under the cap.
 GROQ_MODEL_WATERFALL: List[tuple] = [
-    ("qwen/qwen3.6-27b",        "Qwen3.6 27B",    3500,  6000),
-    ("openai/gpt-oss-120b",     "GPT-OSS 120B",    6000,  8000),
     ("llama-3.3-70b-versatile", "Llama 3.3 70B", 10000, 12000),
+    ("openai/gpt-oss-120b",     "GPT-OSS 120B",    6000,  8000),
+    ("qwen/qwen3.6-27b",        "Qwen3.6 27B",    3500,  6000),
 ]
 
 

@@ -133,9 +133,14 @@ async def generate(req: BlueprintRequest, current_user: dict = Depends(get_curre
 async def generate_stream(req: BlueprintRequest, current_user: dict = Depends(get_current_user)):
     async def sse_generator():
         accumulated_text = ""
+        stage_ac_data = {}
+        is_staged = False
         try:
             async for event_type, payload in run_generator_pipeline_stream(req.idea, req.config.model_dump()):
-                if event_type == "model":
+                if event_type == "stage":
+                    is_staged = True
+                    yield f"data: {json.dumps({'type': 'stage', 'label': payload})}\n\n"
+                elif event_type == "model":
                     # Tell the browser which model is currently active
                     accumulated_text = ""
                     yield f"data: {json.dumps({'type': 'model', 'name': payload})}\n\n"
@@ -143,13 +148,23 @@ async def generate_stream(req: BlueprintRequest, current_user: dict = Depends(ge
                     accumulated_text += payload
                     chunk_payload = json.dumps({'type': 'chunk', 'text': payload})
                     yield f"data: {chunk_payload}\n\n"
+                elif event_type == "merge":
+                    stage_ac_data = json.loads(payload)
 
             # Parse completed stream to JSON — try repair if raw parse fails
-            result = _repair_json(accumulated_text)
-            if result is None:
-                err_payload = json.dumps({'type': 'error', 'message': "The model returned output that wasn't valid JSON. Please try again."})
-                yield f"data: {err_payload}\n\n"
-                return
+            if is_staged:
+                stage_b_result = _repair_json(accumulated_text)
+                if stage_b_result is None or "prd" not in stage_b_result:
+                    err_payload = json.dumps({'type': 'error', 'message': "The model returned output that wasn't valid JSON. Please try again."})
+                    yield f"data: {err_payload}\n\n"
+                    return
+                result = {**stage_ac_data, **stage_b_result}
+            else:
+                result = _repair_json(accumulated_text)
+                if result is None:
+                    err_payload = json.dumps({'type': 'error', 'message': "The model returned output that wasn't valid JSON. Please try again."})
+                    yield f"data: {err_payload}\n\n"
+                    return
 
             db = get_db()
             if req.history_id:

@@ -14,6 +14,7 @@ class HistoryItemResponse(BaseModel):
     config: dict
     created_at: datetime
     name: str | None = None
+    projectName: str | None = None
 
 
 @router.get("", response_model=list[HistoryItemResponse])
@@ -21,17 +22,22 @@ async def list_history(current_user: dict = Depends(get_current_user)):
     db = get_db()
     cursor = db["history"].find(
         {"user_id": current_user["id"]},
-        {"_id": 1, "idea": 1, "config": 1, "created_at": 1, "name": 1}
+        {"_id": 1, "idea": 1, "config": 1, "created_at": 1, "name": 1, "blueprint.promptAnalysis.projectName": 1}
     ).sort("created_at", -1)
     
     results = []
     async for doc in cursor:
+        blueprint_doc = doc.get("blueprint", {}) or {}
+        prompt_analysis = blueprint_doc.get("promptAnalysis", {}) or {}
+        project_name = prompt_analysis.get("projectName")
+        
         results.append(HistoryItemResponse(
             id=doc["_id"],
             idea=doc["idea"],
             config=doc["config"],
             created_at=doc["created_at"],
-            name=doc.get("name")
+            name=doc.get("name"),
+            projectName=project_name
         ))
     return results
 

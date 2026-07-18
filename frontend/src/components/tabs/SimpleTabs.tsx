@@ -206,6 +206,7 @@ export const SecurityTab = ({ bp }: { bp: Blueprint }) => (
 
 export const PromptAnalysisTab = ({ bp }: { bp: Blueprint }) => {
   const analysis = bp.promptAnalysis || {
+    projectName: "N/A",
     industry: "N/A",
     businessType: "N/A",
     complexity: "N/A",
@@ -218,6 +219,7 @@ export const PromptAnalysisTab = ({ bp }: { bp: Blueprint }) => {
   };
 
   const fields = [
+    { label: "Project Name", value: analysis.projectName || "N/A" },
     { label: "Industry", value: analysis.industry },
     { label: "Business Type", value: analysis.businessType },
     { label: "Complexity", value: analysis.complexity },
