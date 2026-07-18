@@ -60,9 +60,9 @@ async def test_waterfall_all_succeed(monkeypatch):
     # We pass a very small prompt so it doesn't get proactively skipped
     res = await run_generator_pipeline("Simple app idea", {})
     assert res == DUMMY_BLUEPRINT
-    # Verify it was called with 'qwen/qwen3-32b'
+    # Verify it was called with 'qwen/qwen3.6-27b'
     assert mock_create.call_count == 1
-    assert mock_create.call_args[1]["model"] == "qwen/qwen3-32b"
+    assert mock_create.call_args[1]["model"] == "qwen/qwen3.6-27b"
 
 @pytest.mark.asyncio
 async def test_waterfall_rate_limit_fallback(monkeypatch):
@@ -73,7 +73,7 @@ async def test_waterfall_rate_limit_fallback(monkeypatch):
     async def mock_create_fn(**kwargs):
         model = kwargs["model"]
         calls.append(model)
-        if model == "qwen/qwen3-32b":
+        if model == "qwen/qwen3.6-27b":
             raise groq_sdk.RateLimitError(
                 message="Rate limit hit",
                 response=MagicMock(headers={"retry-after": "1"}),
@@ -87,7 +87,7 @@ async def test_waterfall_rate_limit_fallback(monkeypatch):
     res = await run_generator_pipeline("Simple app idea", {})
     assert res == DUMMY_BLUEPRINT
     assert len(calls) == 2
-    assert calls[0] == "qwen/qwen3-32b"
+    assert calls[0] == "qwen/qwen3.6-27b"
     assert calls[1] == "openai/gpt-oss-120b"
 
 @pytest.mark.asyncio
@@ -99,7 +99,7 @@ async def test_waterfall_request_too_large_fallback(monkeypatch):
     async def mock_create_fn(**kwargs):
         model = kwargs["model"]
         calls.append(model)
-        if model in ("qwen/qwen3-32b", "openai/gpt-oss-120b"):
+        if model in ("qwen/qwen3.6-27b", "openai/gpt-oss-120b"):
             # Mock a 413 APIStatusError
             raise groq_sdk.APIStatusError(
                 message="Request too large",
@@ -114,7 +114,7 @@ async def test_waterfall_request_too_large_fallback(monkeypatch):
     res = await run_generator_pipeline("Simple app idea", {})
     assert res == DUMMY_BLUEPRINT
     assert len(calls) == 3
-    assert calls[0] == "qwen/qwen3-32b"
+    assert calls[0] == "qwen/qwen3.6-27b"
     assert calls[1] == "openai/gpt-oss-120b"
     assert calls[2] == "llama-3.3-70b-versatile"
 
@@ -126,17 +126,13 @@ async def test_waterfall_proactive_token_skip(monkeypatch):
     mock_client.chat.completions.create = mock_create
     monkeypatch.setattr("app.services.pipeline._get_async_client", lambda: mock_client)
     
-    # 25000 chars // 4 = ~6250 tokens
-    # - Qwen: limit is 6000. 6250 > 6000 -> Skips proactively.
-    # - GPT-OSS: limit is 8000. 8000 - 6250 = 1750 remaining < 2000 min_usable -> Skips proactively.
-    # - Llama: limit is 12000. 12000 - 6250 = 5750 remaining >= 2000 min_usable -> Succeeds (caps active_max_tokens to 5750).
     massive_prompt = "x" * 25000
     res = await run_generator_pipeline(massive_prompt, {})
     assert res == DUMMY_BLUEPRINT
     # Verify it skipped Qwen and GPT-OSS entirely and only called Llama
     assert mock_create.call_count == 1
     assert mock_create.call_args[1]["model"] == "llama-3.3-70b-versatile"
-    assert mock_create.call_args[1]["max_tokens"] == 5689
+    assert mock_create.call_args[1]["max_tokens"] == 3350
 
 @pytest.mark.asyncio
 async def test_waterfall_stream_fallback(monkeypatch):
@@ -148,25 +144,25 @@ async def test_waterfall_stream_fallback(monkeypatch):
         def __init__(self, text):
             self.text = text
             self.index = 0
-
+ 
         def __aiter__(self):
             return self
-
+ 
         async def __anext__(self):
             if self.index >= len(self.text):
                 raise StopAsyncIteration
             val = MockResponse(self.text[self.index], is_stream=True)
             self.index += 1
             return val
-
+ 
     calls = []
     async def mock_create_fn(**kwargs):
         model = kwargs["model"]
         calls.append(model)
-        if model == "qwen/qwen3-32b":
+        if model == "qwen/qwen3.6-27b":
             raise groq_sdk.RateLimitError("Rate limit", response=MagicMock(headers={}), body={})
         return AsyncStream(json.dumps(DUMMY_BLUEPRINT))
-
+ 
     mock_client.chat.completions.create = AsyncMock(side_effect=mock_create_fn)
     monkeypatch.setattr("app.services.pipeline._get_async_client", lambda: mock_client)
     
@@ -176,10 +172,10 @@ async def test_waterfall_stream_fallback(monkeypatch):
         
     # Qwen should have failed and switched to GPT-OSS
     assert len(calls) == 2
-    assert calls[0] == "qwen/qwen3-32b"
+    assert calls[0] == "qwen/qwen3.6-27b"
     assert calls[1] == "openai/gpt-oss-120b"
     
-    # First model event should announce Qwen3 32B, then GPT-OSS 120B, then chunks
-    assert events[0] == ("model", "Qwen3 32B")
+    # First model event should announce Qwen3.6 27B, then GPT-OSS 120B, then chunks
+    assert events[0] == ("model", "Qwen3.6 27B")
     assert events[1] == ("model", "GPT-OSS 120B")
     assert any(e[0] == "chunk" for e in events)

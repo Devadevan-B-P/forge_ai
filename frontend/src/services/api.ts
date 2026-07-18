@@ -35,6 +35,7 @@ export interface HistoryItem {
   idea: string;
   config: BlueprintConfig;
   created_at: string;
+  name?: string | null;
 }
 
 export async function generateBlueprint(
@@ -72,6 +73,11 @@ export async function fetchHistoryDetail(
 
 export async function deleteHistory(id: string): Promise<{ success: boolean }> {
   const { data } = await client.delete<{ success: boolean }>(`/history/${id}`);
+  return data;
+}
+
+export async function renameHistory(id: string, name: string): Promise<{ success: boolean }> {
+  const { data } = await client.patch<{ success: boolean }>(`/history/${id}/rename`, { name });
   return data;
 }
 

@@ -66,6 +66,20 @@ def test_history_crud_and_idor(client, mock_db):
     assert res_view_a.status_code == 200
     assert res_view_a.json()["idea"] == "An ecommerce platform"
 
+    # User B tries to rename User A's project (IDOR check)
+    res_rename_b = client.patch(f"/api/history/{project_id}/rename", json={"name": "Attacked Project Name"}, headers=headers_b)
+    assert res_rename_b.status_code == 404
+
+    # User A renames their project
+    res_rename_a = client.patch(f"/api/history/{project_id}/rename", json={"name": "My Custom Project Name"}, headers=headers_a)
+    assert res_rename_a.status_code == 200
+    assert res_rename_a.json() == {"success": True}
+
+    # Verify User A's project list shows the updated custom name
+    res_list_a_rename = client.get("/api/history", headers=headers_a)
+    assert res_list_a_rename.status_code == 200
+    assert res_list_a_rename.json()[0]["name"] == "My Custom Project Name"
+
     # User B tries to delete User A's project (IDOR prevention check)
     res_del_b = client.delete(f"/api/history/{project_id}", headers=headers_b)
     assert res_del_b.status_code == 404

@@ -128,7 +128,7 @@ async def _call_model_async(
     kwargs: dict = dict(
         model=model_id,
         messages=messages,
-        temperature=0.3,
+        temperature=0.1,
         max_tokens=max_tokens,
         timeout=60,
     )
@@ -142,7 +142,7 @@ async def _call_model_async(
 async def run_generator_pipeline(idea: str, config: dict) -> dict:
     """Non-streaming pipeline that tries models in waterfall order."""
     prompt = build_user_prompt(idea, config)
-    estimated_input_tokens = len(prompt) // 4
+    estimated_input_tokens = (len(prompt) + len(BLUEPRINT_SYSTEM_PROMPT)) // 4
     last_exc: Exception | None = None
 
     for model_id, model_name, max_tokens, tpm_limit in GROQ_MODEL_WATERFALL:
@@ -151,16 +151,18 @@ async def run_generator_pipeline(idea: str, config: dict) -> dict:
             print(f"[INFO] Proactively skipping {model_name} (input size {estimated_input_tokens} >= limit {tpm_limit})")
             continue
 
-        # Dynamic max_tokens capping logic
+        # Dynamic max_tokens capping logic with safety buffer
+        safety_buffer = 500
+        safe_tpm_limit = tpm_limit - safety_buffer
         min_usable_output = 2000
         active_max_tokens = max_tokens
-        if estimated_input_tokens + max_tokens > tpm_limit:
-            remaining_budget = tpm_limit - estimated_input_tokens
+        if estimated_input_tokens + max_tokens > safe_tpm_limit:
+            remaining_budget = safe_tpm_limit - estimated_input_tokens
             if remaining_budget < min_usable_output:
                 print(f"[INFO] Proactively skipping {model_name} (remaining output budget {remaining_budget} is below minimum {min_usable_output})")
                 continue
             active_max_tokens = remaining_budget
-            print(f"[INFO] Dynamically capping max_tokens for {model_name} from {max_tokens} to {active_max_tokens} to fit inside {tpm_limit} TPM limit")
+            print(f"[INFO] Dynamically capping max_tokens for {model_name} from {max_tokens} to {active_max_tokens} to fit inside safe {safe_tpm_limit} TPM limit")
 
         estimated_total_tokens = estimated_input_tokens + active_max_tokens
 
@@ -205,7 +207,7 @@ async def run_generator_pipeline_stream(
     JSON-mode-not-supported errors, emitting a fresh "model" event each time.
     """
     prompt = build_user_prompt(idea, config)
-    estimated_input_tokens = len(prompt) // 4
+    estimated_input_tokens = (len(prompt) + len(BLUEPRINT_SYSTEM_PROMPT)) // 4
     client = _get_async_client()
     messages = [
         {"role": "system", "content": BLUEPRINT_SYSTEM_PROMPT},
@@ -219,16 +221,18 @@ async def run_generator_pipeline_stream(
             print(f"[INFO] Proactively skipping {model_name} (input size {estimated_input_tokens} >= limit {tpm_limit})")
             continue
 
-        # Dynamic max_tokens capping logic
+        # Dynamic max_tokens capping logic with safety buffer
+        safety_buffer = 500
+        safe_tpm_limit = tpm_limit - safety_buffer
         min_usable_output = 2000
         active_max_tokens = max_tokens
-        if estimated_input_tokens + max_tokens > tpm_limit:
-            remaining_budget = tpm_limit - estimated_input_tokens
+        if estimated_input_tokens + max_tokens > safe_tpm_limit:
+            remaining_budget = safe_tpm_limit - estimated_input_tokens
             if remaining_budget < min_usable_output:
                 print(f"[INFO] Proactively skipping {model_name} (remaining output budget {remaining_budget} is below minimum {min_usable_output})")
                 continue
             active_max_tokens = remaining_budget
-            print(f"[INFO] Dynamically capping max_tokens for {model_name} from {max_tokens} to {active_max_tokens} to fit inside {tpm_limit} TPM limit")
+            print(f"[INFO] Dynamically capping max_tokens for {model_name} from {max_tokens} to {active_max_tokens} to fit inside safe {safe_tpm_limit} TPM limit")
 
         estimated_total_tokens = estimated_input_tokens + active_max_tokens
 
@@ -250,7 +254,7 @@ async def run_generator_pipeline_stream(
             kwargs: dict = dict(
                 model=model_id,
                 messages=messages,
-                temperature=0.3,
+                temperature=0.1,
                 max_tokens=active_max_tokens,
                 timeout=120,
                 stream=True,

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Loader2, Sparkles, RotateCcw, Download, FileText, LogOut,
-  Cpu, Zap, ChevronRight, Plus, Trash2, FolderCode
+  Cpu, Zap, ChevronRight, Plus, Trash2, FolderCode, Edit2
 } from "lucide-react";
 import ConfigPanel from "../components/ConfigPanel";
 import OutputTabs from "../components/OutputTabs";
@@ -15,6 +15,7 @@ import {
   fetchHistory,
   fetchHistoryDetail,
   deleteHistory,
+  renameHistory,
   type HistoryItem,
 } from "../services/api";
 import type { Blueprint, BlueprintConfig } from "../types/blueprint";
@@ -123,8 +124,10 @@ const extractProductName = (ideaStr: string): string => {
     const idx = clean.toLowerCase().indexOf(splitter);
     if (idx > 0) {
       const part = clean.slice(0, idx).trim();
+      const partLower = part.toLowerCase();
+      const isCommonVerbPhrase = ["i want", "we want", "i need", "we need", "build a", "create a", "design a", "develop a", "i would like", "we would like", "a platform"].includes(partLower);
       // Verify it's a reasonable name length and doesn't contain prompt words
-      if (part.length > 2 && part.length < 60 && !part.toLowerCase().includes("you are") && !part.toLowerCase().includes("generate")) {
+      if (part.length > 2 && part.length < 60 && !part.toLowerCase().includes("you are") && !part.toLowerCase().includes("generate") && !isCommonVerbPhrase) {
         return part.charAt(0).toUpperCase() + part.slice(1);
       }
     }
@@ -262,6 +265,8 @@ export default function Generator() {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [activeHistoryId, setActiveHistoryId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [editingHistoryId, setEditingHistoryId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState<string>("");
   /** Which AI model is currently being used for streaming generation */
   const [activeModel, setActiveModel] = useState<string | null>(null);
 
@@ -409,6 +414,31 @@ export default function Generator() {
       }
     } catch (err: any) {
       alert(getErrorMessage(err, "Failed to delete project."));
+    }
+  };
+
+  const handleStartRename = (e: React.MouseEvent, id: string, currentName: string) => {
+    e.stopPropagation();
+    setEditingHistoryId(id);
+    setEditingName(currentName);
+  };
+
+  const handleSaveRename = async (id: string) => {
+    if (!editingName.trim()) {
+      setEditingHistoryId(null);
+      return;
+    }
+    try {
+      await renameHistory(id, editingName.trim());
+      setHistory((prev) =>
+        prev.map((item) =>
+          item.id === id ? { ...item, name: editingName.trim() } : item
+        )
+      );
+    } catch (err: any) {
+      alert(getErrorMessage(err, "Failed to rename project."));
+    } finally {
+      setEditingHistoryId(null);
     }
   };
 
@@ -845,17 +875,44 @@ export default function Generator() {
                     >
                       <div className="flex items-center gap-2 min-w-0 flex-1">
                         <FolderCode size={13} className={isActive ? "text-[#5FA9FF]" : "text-[#9CA3AF]"} />
-                        <span className="text-[11px] font-medium truncate flex-1 leading-tight">
-                          {extractProductName(item.idea)}
-                        </span>
+                        {editingHistoryId === item.id ? (
+                          <input
+                            type="text"
+                            value={editingName}
+                            onChange={(e) => setEditingName(e.target.value)}
+                            onBlur={() => handleSaveRename(item.id)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") handleSaveRename(item.id);
+                              if (e.key === "Escape") setEditingHistoryId(null);
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-[11px] font-medium bg-black/40 border border-[#5FA9FF]/50 rounded px-1.5 py-0.5 text-white w-full outline-none focus:border-[#5FA9FF]"
+                            autoFocus
+                          />
+                        ) : (
+                          <span className="text-[11px] font-medium truncate flex-1 leading-tight">
+                            {item.name || extractProductName(item.idea)}
+                          </span>
+                        )}
                       </div>
-                      <button
-                        onClick={(e) => handleDeleteHistory(e, item.id)}
-                        className="text-[#9CA3AF]/50 hover:text-red-400 p-0.5 rounded transition-colors"
-                        title="Delete project"
-                      >
-                        <Trash2 size={12} />
-                      </button>
+                      {editingHistoryId !== item.id && (
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            onClick={(e) => handleStartRename(e, item.id, item.name || extractProductName(item.idea))}
+                            className="text-[#9CA3AF]/50 hover:text-[#5FA9FF] p-0.5 rounded transition-colors group-hover:opacity-100 opacity-0"
+                            title="Rename project"
+                          >
+                            <Edit2 size={12} />
+                          </button>
+                          <button
+                            onClick={(e) => handleDeleteHistory(e, item.id)}
+                            className="text-[#9CA3AF]/50 hover:text-red-400 p-0.5 rounded transition-colors"
+                            title="Delete project"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   );
                 })
