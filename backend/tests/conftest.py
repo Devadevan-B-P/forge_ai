@@ -53,7 +53,7 @@ class MockCollection:
         self.storage[_id] = document
         return MagicMock(inserted_id=_id)
 
-    async def update_one(self, filter, update):
+    async def update_one(self, filter, update, upsert=False):
         doc = None
         for item in self.storage.values():
             match = True
@@ -66,6 +66,14 @@ class MockCollection:
                 break
         
         if not doc:
+            if upsert:
+                new_doc = dict(filter)
+                if "$set" in update:
+                    for k, v in update["$set"].items():
+                        new_doc[k] = v
+                _id = new_doc.get("_id")
+                self.storage[_id] = new_doc
+                return MagicMock(matched_count=0, modified_count=1, upserted_id=_id)
             return MagicMock(matched_count=0, modified_count=0)
 
         if "$set" in update:

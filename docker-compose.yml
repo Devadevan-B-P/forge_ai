@@ -16,16 +16,16 @@ services:
       - ./backend/.env
     environment:
       - REDIS_URL=redis://redis:6379/0
+      - EMAILJS_SERVICE_ID=${EMAILJS_SERVICE_ID}
+      - EMAILJS_CONTACT_TEMPLATE_ID=${EMAILJS_CONTACT_TEMPLATE_ID}
+      - EMAILJS_AUTO_REPLY_TEMPLATE_ID=${EMAILJS_AUTO_REPLY_TEMPLATE_ID}
+      - EMAILJS_PUBLIC_KEY=${EMAILJS_PUBLIC_KEY}
+      - EMAILJS_PRIVATE_KEY=${EMAILJS_PRIVATE_KEY}
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-      args:
-        VITE_EMAILJS_SERVICE_ID: ${VITE_EMAILJS_SERVICE_ID}
-        VITE_EMAILJS_CONTACT_TEMPLATE_ID: ${VITE_EMAILJS_CONTACT_TEMPLATE_ID}
-        VITE_EMAILJS_AUTO_REPLY_TEMPLATE_ID: ${VITE_EMAILJS_AUTO_REPLY_TEMPLATE_ID}
-        VITE_EMAILJS_PUBLIC_KEY: ${VITE_EMAILJS_PUBLIC_KEY}
     container_name: forge_ai_frontend
     restart: unless-stopped
     depends_on:
@@ -42,6 +42,8 @@ services:
     ports:
       - "80:80"
       - "443:443"
+    environment:
+      - CADDY_EMAIL=${CADDY_EMAIL:-admin@forge-ai-dev.cloud-ip.cc}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
       - caddy_data:/data

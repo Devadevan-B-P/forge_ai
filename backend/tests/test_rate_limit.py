@@ -39,9 +39,9 @@ def test_sqlite_rate_limiting(monkeypatch):
             print(f"Request {i}: status={resp.status_code}")
             responses.append(resp.status_code)
             
-        # Check that the first 10 requests got through (404 Not Found because user does not exist)
+        # Check that the first 10 requests got through (401 Unauthorized because credentials are invalid)
         for code in responses[:10]:
-            assert code == 404
+            assert code == 401
             
         # Check that the 11th and 12th requests got blocked (429 Too Many Requests)
         assert responses[10] == 429

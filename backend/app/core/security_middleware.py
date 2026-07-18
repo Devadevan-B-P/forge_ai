@@ -49,6 +49,8 @@ class SecurityMiddleware:
         is_auth = path.startswith("/api/auth/")
         limit = self.auth_limit if is_auth else self.general_limit
 
+        import anyio
+        
         # 1. Rate Limiting Check
         is_rate_limited = False
 
@@ -67,9 +69,13 @@ class SecurityMiddleware:
             except Exception as e:
                 # Fallback to SQLite/in-memory on Redis error
                 print(f"[WARN] Redis rate limiting failed, falling back to SQLite: {e}")
-                is_rate_limited = self._check_sqlite(client_ip, 'auth' if is_auth else 'general', limit, now)
+                is_rate_limited = await anyio.to_thread.run_sync(
+                    self._check_sqlite, client_ip, 'auth' if is_auth else 'general', limit, now
+                )
         else:
-            is_rate_limited = self._check_sqlite(client_ip, 'auth' if is_auth else 'general', limit, now)
+            is_rate_limited = await anyio.to_thread.run_sync(
+                self._check_sqlite, client_ip, 'auth' if is_auth else 'general', limit, now
+            )
 
         if is_rate_limited:
             response = JSONResponse(

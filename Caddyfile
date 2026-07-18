@@ -1,5 +1,5 @@
 {
-    email devadevan62338@gmail.com
+    email {$CADDY_EMAIL}
 }
 
 forge-ai-dev.cloud-ip.cc {

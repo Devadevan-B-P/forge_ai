@@ -7,12 +7,7 @@ import {
   Compass, Rocket, Lightbulb, FileText, X
 } from "lucide-react";
 import SiteNav from "../components/SiteNav";
-import emailjs from "@emailjs/browser";
 
-const PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
-const SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID;
-const CONTACT_TEMPLATE = import.meta.env.VITE_EMAILJS_CONTACT_TEMPLATE_ID;
-const AUTO_REPLY_TEMPLATE = import.meta.env.VITE_EMAILJS_AUTO_REPLY_TEMPLATE_ID;
 
 /* ─── Documentation Section Content Mapping ─────────────────────────── */
 const getSectionIcon = (iconName: string) => {
@@ -459,12 +454,6 @@ export default function Contact() {
   // Always scroll to top on mount
   useEffect(() => {
     window.scrollTo(0, 0);
-    console.log("EmailJS Setup Status:", {
-      serviceId: SERVICE_ID ? "Loaded" : "Missing",
-      contactTemplate: CONTACT_TEMPLATE ? "Loaded" : "Missing",
-      autoReplyTemplate: AUTO_REPLY_TEMPLATE ? "Loaded" : "Missing",
-      publicKey: PUBLIC_KEY && PUBLIC_KEY !== "your_emailjs_public_key_here" ? "Configured" : "Placeholder/Missing",
-    });
   }, []);
 
   // Lock body scroll when Documentation Modal is open to prevent scroll interference
@@ -536,11 +525,23 @@ export default function Contact() {
     };
 
     try {
-      // Send templates in parallel using EmailJS v4 options object
-      await Promise.all([
-        emailjs.send(SERVICE_ID, CONTACT_TEMPLATE, templateParams, { publicKey: PUBLIC_KEY }),
-        emailjs.send(SERVICE_ID, AUTO_REPLY_TEMPLATE, templateParams, { publicKey: PUBLIC_KEY }),
-      ]);
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: trimmedName,
+          email: trimmedEmail,
+          subject: trimmedSubject,
+          message: trimmedMessage,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || "Failed to send message.");
+      }
 
       setProgress(100);
       setTimeout(() => setFormState("success"), 300);

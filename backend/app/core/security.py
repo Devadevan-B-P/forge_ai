@@ -29,12 +29,14 @@ async def verify_password(plain: str, hashed: str) -> bool:
 # ────────────────────────────────────────────────────────────────────
 
 def create_access_token(user_id: str, email: str) -> str:
+    import uuid
     expire = datetime.now(timezone.utc) + timedelta(minutes=settings.jwt_expire_minutes)
     payload = {
         "sub": user_id,
         "email": email,
         "exp": expire,
         "iat": datetime.now(timezone.utc),
+        "jti": str(uuid.uuid4()),
     }
     return jwt.encode(payload, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
 
@@ -72,11 +74,23 @@ async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(_bearer),
 ):
     payload = decode_access_token(credentials.credentials)
+    jti = payload.get("jti")
+    db = get_db()
+    
+    if jti:
+        # Reject if token is blacklisted (revoked/logged out)
+        blacklisted = await db["token_blacklist"].find_one({"_id": jti})
+        if blacklisted:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token has been revoked. Please log in again.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
     user_id = payload.get("sub")
     if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload.")
 
-    db = get_db()
     user = await db["users"].find_one({"_id": user_id}, {"password_hash": 0})
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found.")

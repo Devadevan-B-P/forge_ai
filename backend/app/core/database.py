@@ -60,11 +60,16 @@ async def connect_db():
         await _client.admin.command("ping")
         print("[OK] Connected to MongoDB Atlas")
         
-        # Ensure collection indexes exist
-        db = get_db()
-        await db["history"].create_index([("user_id", 1), ("created_at", -1)])
-        await db["users"].create_index("email", unique=True)
-        print("[OK] MongoDB indexes verified/created")
+        # Ensure collection indexes exist securely
+        try:
+            db = get_db()
+            await db["history"].create_index([("user_id", 1), ("created_at", -1)])
+            await db["users"].create_index("email", unique=True)
+            # Create a TTL index that automatically deletes entries after the datetime stored in 'expires_at'
+            await db["token_blacklist"].create_index("expires_at", expireAfterSeconds=0)
+            print("[OK] MongoDB indexes verified/created")
+        except Exception as idx_err:
+            print(f"[WARN] Failed to create database indexes: {idx_err}. Server connection remains active.")
     except Exception as e:
         _client = None
         print(f"[WARN] MongoDB connection failed: {e}. Auth features will be unavailable.")

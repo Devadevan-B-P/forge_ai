@@ -33,10 +33,17 @@ class Settings(BaseSettings):
     # JWT
     jwt_secret_key: str
     jwt_algorithm: str = "HS256"
-    jwt_expire_minutes: int = 60 * 24 * 7  # 7 days
+    jwt_expire_minutes: int = 120  # 2 hours (hardened lifetime)
 
     # Redis
     redis_url: str = ""
+
+    # EmailJS (backend security fallback)
+    emailjs_service_id: str = ""
+    emailjs_contact_template_id: str = ""
+    emailjs_auto_reply_template_id: str = ""
+    emailjs_public_key: str = ""
+    emailjs_private_key: str = ""
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

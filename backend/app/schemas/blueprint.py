@@ -12,9 +12,9 @@ class BlueprintConfig(BaseModel):
 
 
 class BlueprintRequest(BaseModel):
-    idea: str
+    idea: str = Field(..., max_length=3000)
     config: BlueprintConfig
-    history_id: str | None = None
+    history_id: str | None = Field(default=None, max_length=50)
 
 
 class PromptAnalysis(BaseModel):
@@ -127,15 +127,15 @@ class BlueprintResponse(BaseModel):
 
 class SqlGenerateRequest(BaseModel):
     database: dict[str, Any]
-    dialect: str = Field(default="PostgreSQL")
-    history_id: str | None = None
+    dialect: str = Field(default="PostgreSQL", max_length=50)
+    history_id: str | None = Field(default=None, max_length=50)
 
 
 class EndpointGenerateRequest(BaseModel):
     endpoint: dict[str, Any]
-    framework: str = Field(default="FastAPI")
-    history_id: str | None = None
-    endpoint_key: str | None = None
+    framework: str = Field(default="FastAPI", max_length=50)
+    history_id: str | None = Field(default=None, max_length=50)
+    endpoint_key: str | None = Field(default=None, max_length=200)
 
 
 class CodeResponse(BaseModel):

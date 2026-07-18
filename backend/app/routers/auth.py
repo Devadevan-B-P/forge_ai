@@ -58,16 +58,17 @@ async def signup(body: SignupRequest):
 async def login(body: LoginRequest):
     db = get_db()
 
+    # Mitigate timing attack user enumeration
+    dummy_hash = "$2b$12$LZy7Yx0/2sB3W4L3L3L3L.L3L3L3L3L3L3L3L3L3L3L3L3L3L3L3L"
     user = await db["users"].find_one({"email": body.email})
-    if not user:
+    
+    password_hash = user["password_hash"] if user else dummy_hash
+    password_correct = await verify_password(body.password, password_hash)
+
+    if not user or not password_correct:
         raise HTTPException(
-            status_code=404,
-            detail="No account found with this email. Sign up to get started!",
-        )
-    if not await verify_password(body.password, user["password_hash"]):
-        raise HTTPException(
-            status_code=401,
-            detail="Incorrect password — try again!",
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password.",
         )
 
     # Update last login time
@@ -82,6 +83,40 @@ async def login(body: LoginRequest):
         access_token=token,
         user={"id": user["_id"], "email": user["email"], "name": user.get("name", "")},
     )
+
+
+# ─────────────────────────────────────────
+# POST /api/auth/logout
+# ─────────────────────────────────────────
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from app.core.security import decode_access_token
+
+_bearer = HTTPBearer()
+
+
+@router.post("/logout")
+async def logout(
+    current_user: dict = Depends(get_current_user),
+    credentials: HTTPAuthorizationCredentials = Depends(_bearer),
+):
+    token = credentials.credentials
+    try:
+        payload = decode_access_token(token)
+        jti = payload.get("jti")
+        exp = payload.get("exp")
+        if jti and exp:
+            db = get_db()
+            exp_dt = datetime.fromtimestamp(exp, tz=timezone.utc)
+            # Add to MongoDB token_blacklist (with TTL expiration check)
+            await db["token_blacklist"].update_one(
+                {"_id": jti},
+                {"$set": {"expires_at": exp_dt}},
+                upsert=True
+            )
+    except Exception:
+        # If decode fails, it is already invalid
+        pass
+    return {"detail": "Successfully logged out."}
 
 
 # ─────────────────────────────────────────
