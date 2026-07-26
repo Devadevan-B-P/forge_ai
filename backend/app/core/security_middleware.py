@@ -40,6 +40,32 @@ class SecurityMiddleware:
 
         path = scope.get("path", "")
 
+        # Skip rate limiting for static assets
+        STATIC_PREFIXES = (
+            "/assets/",
+            "/flower_frames/",
+        )
+
+        STATIC_EXTENSIONS = (
+            ".png",
+            ".jpg",
+            ".jpeg",
+            ".gif",
+            ".webp",
+            ".svg",
+            ".ico",
+            ".woff",
+            ".woff2",
+            ".ttf",
+            ".css",
+            ".js",
+        )
+
+        if path.startswith(STATIC_PREFIXES) or path.endswith(STATIC_EXTENSIONS):
+            await self.app(scope, receive, send)
+            return
+
+
         # Get client IP address
         client = scope.get("client")
         client_ip = client[0] if client else "unknown"
