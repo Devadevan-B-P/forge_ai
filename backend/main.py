@@ -91,19 +91,9 @@ def health():
 
 
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 import os
 
 frontend_dist = os.path.join(os.path.dirname(__file__), "static")
-assets_dir = os.path.join(frontend_dist, "assets")
 
-if os.path.exists(assets_dir):
-    app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
-
-
-@app.get("/{full_path:path}")
-async def serve_react(full_path: str):
-    index_file = os.path.join(frontend_dist, "index.html")
-    if os.path.exists(index_file):
-        return FileResponse(index_file)
-    return {"message": "Forge AI API - Frontend static assets not built"}
+if os.path.exists(frontend_dist):
+    app.mount("/", StaticFiles(directory=frontend_dist, html=True), name="frontend")
