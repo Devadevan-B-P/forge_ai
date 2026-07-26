@@ -21,7 +21,7 @@ Instead of jumping straight to raw code, Forge AI focuses on designing a robust 
 - **ReportLab Server-Side PDF Exporter**: Exposes a stateless API endpoint (`/api/blueprint/pdf`) to compile the generated blueprint into a high-fidelity PDF document on the server using ReportLab's Platypus flowable engine. Supports custom slate-themed page headers, dynamic page numbering ("Page X of Y"), tables for prompt analysis metadata, proper margins, and unicode character normalization.
 - **Docker & Deployment Specs**: Pre-configured `Dockerfile` structure and multi-tier deployment topology.
 - **AWS Infrastructure Maps**: Recommendations for ECS, RDS, S3, and CloudFront.
-- **High-Performance "About" Page**: Features a scroll-based canvas blooming flower animation, dynamically hidden on mobile devices (screens < 768px) with GPU frame caching to prevent redraw overhead when stationary.
+- **High-Performance "About" Page**: Features a scroll-based HTML5 Canvas blooming flower animation powered by an optimized 150-frame WebP sequence with hardware acceleration, zero seek latency, and seamless responsiveness across both desktop and mobile devices.
 - **Interactive Particle Physics**: Features a canvas-based flying particles loop generating subtle, interactive background visuals in the **Contact** and **Generator** pages.
 
 ---
@@ -120,26 +120,101 @@ Ensure you have the following installed on your machine:
 
 ---
 
-### Option 2: Docker Compose Deployment (Production-ready)
+### Option 2: Docker Deployment Guide
 
-The stack is pre-configured to build, link, and deploy in one command using Docker Compose, reverse-proxied with **Caddy** for automated routing and gzip encoding.
+Forge AI is fully containerized. You can run the entire application using **Docker Compose** (recommended) or run individual containers manually.
 
-1. Ensure your `.env` settings are properly populated:
-   - Make sure your MongoDB network allows access (e.g., whitelist your server IP or set `0.0.0.0/0` in Atlas Network Access).
-   - Set the required variables in `./backend/.env`.
-2. Build and launch the containers:
-   ```bash
-   docker-compose up -d --build
-   ```
-3. The setup coordinates the following:
-   - **Caddy**: Exposed on ports `80` and `443`. Listens on `forge-ai-dev.cloud-ip.cc` (or your customized domain in `Caddyfile`) and reverse-proxies requests to the frontend service container.
-   - **Frontend**: Running inside an Nginx container serving static build assets.
-   - **Backend & Redis**: Stays internal-only to the Docker bridge network to protect the APIs, with Redis caching/rate-limiting enabled automatically.
+#### 1. Quick Start with Docker Compose (Recommended)
 
-To shut down the running containers:
+Make sure you have created and configured `./backend/.env` with your `GROQ_API_KEY`, `MONGODB_URI`, and `JWT_SECRET_KEY`.
+
+**Build and start all services in detached mode:**
 ```bash
-docker-compose down
+docker compose up -d --build
 ```
+*(Or `docker-compose up -d --build` on older Docker Compose versions)*
+
+**Check container status:**
+```bash
+docker compose ps
+```
+
+**View real-time logs across all services:**
+```bash
+docker compose logs -f
+```
+
+**View logs for a specific service (backend, frontend, or caddy):**
+```bash
+docker compose logs -f backend
+docker compose logs -f frontend
+docker compose logs -f caddy
+```
+
+**Stop all running containers:**
+```bash
+docker compose down
+```
+
+**Stop and remove containers, networks, and volumes:**
+```bash
+docker compose down -v
+```
+
+---
+
+#### 2. Running Individual Docker Containers
+
+If you prefer to build and run backend and frontend containers manually:
+
+##### **A. Backend Container**
+1. Build the Backend Docker image:
+   ```bash
+   docker build -t forge-ai-backend ./backend
+   ```
+2. Run the Backend container:
+   ```bash
+   docker run -d \
+     --name forge_ai_backend \
+     -p 8000:8000 \
+     --env-file ./backend/.env \
+     forge-ai-backend
+   ```
+3. Verify backend health endpoint:
+   ```bash
+   curl http://localhost:8000/api/health
+   ```
+
+##### **B. Frontend Container**
+1. Build the Frontend Docker image:
+   ```bash
+   docker build -t forge-ai-frontend ./frontend
+   ```
+2. Run the Frontend container:
+   ```bash
+   docker run -d \
+     --name forge_ai_frontend \
+     -p 80:80 \
+     forge-ai-frontend
+   ```
+3. Open `http://localhost` in your browser.
+
+##### **C. Redis Container (Optional - for Rate Limiting / Model Cooldown)**
+```bash
+docker run -d --name forge_ai_redis -p 6379:6379 redis:alpine
+```
+
+---
+
+#### 3. Docker Management Cheat Sheet
+
+| Task | Command |
+| :--- | :--- |
+| **Rebuild containers without cache** | `docker compose build --no-cache` |
+| **Restart a specific service** | `docker compose restart backend` |
+| **Execute interactive shell in backend** | `docker exec -it forge_ai_backend /bin/bash` |
+| **Inspect container resources/stats** | `docker stats` |
+| **Prune unused Docker data** | `docker system prune -af` |
 
 ---
 
@@ -178,7 +253,7 @@ forge-ai/
   frontend/
     src/
       pages/Landing.tsx          # Start building landing page
-      pages/About.tsx            # Cinematic scroll-based animations (mobile-disabled)
+      pages/About.tsx            # Cinematic canvas scroll-based flower animation (desktop & mobile)
       pages/Contact.tsx          # Contact forms integration (via EmailJS)
       pages/Generator.tsx        # Dashboard workspace generator (configuration + tabs)
       pages/Auth.tsx             # Signup / Login with validation modal

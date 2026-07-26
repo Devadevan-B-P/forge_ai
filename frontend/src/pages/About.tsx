@@ -127,80 +127,132 @@ function PrincipleCard({ p, index }: { p: { icon: LucideIcon; title: string; bod
 export default function About() {
   const navigate = useNavigate();
   const heroContainerRef = useRef<HTMLDivElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const imagesRef = useRef<(HTMLImageElement | null)[]>([]);
 
   useEffect(() => {
+    const FRAME_COUNT = 300;
+    const images: (HTMLImageElement | null)[] = new Array(FRAME_COUNT).fill(null);
+    imagesRef.current = images;
+
     let targetFrame = 0;
     let currentFrame = 0;
-    const lerpFactor = 0.06; // Highly smooth deceleration factor
+    let lastRenderedIndex = -1;
+    const lerpFactor = 0.08;
     let animationFrameId: number;
 
-    const handleScroll = () => {
-      if (window.innerWidth < 768) return;
-      const video = videoRef.current;
-      if (!video || !video.duration) return;
+    const renderFrame = (index: number) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
 
+      const clampedIndex = Math.max(0, Math.min(FRAME_COUNT - 1, index));
+
+      // Find exact or nearest loaded frame
+      let img = images[clampedIndex];
+      if (!img || !img.complete || img.naturalWidth === 0) {
+        for (let offset = 1; offset < FRAME_COUNT; offset++) {
+          const prev = clampedIndex - offset;
+          const next = clampedIndex + offset;
+          if (prev >= 0 && images[prev]?.complete && images[prev]?.naturalWidth !== 0) {
+            img = images[prev];
+            break;
+          }
+          if (next < FRAME_COUNT && images[next]?.complete && images[next]?.naturalWidth !== 0) {
+            img = images[next];
+            break;
+          }
+        }
+      }
+
+      if (!img || !img.complete || img.naturalWidth === 0) return;
+
+      const canvasWidth = canvas.width;
+      const canvasHeight = canvas.height;
+      const imgWidth = img.naturalWidth;
+      const imgHeight = img.naturalHeight;
+
+      // Draw object-cover
+      const scale = Math.max(canvasWidth / imgWidth, canvasHeight / imgHeight);
+      const x = (canvasWidth - imgWidth * scale) / 2;
+      const y = (canvasHeight - imgHeight * scale) / 2;
+
+      ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+      ctx.drawImage(img, x, y, imgWidth * scale, imgHeight * scale);
+      lastRenderedIndex = clampedIndex;
+    };
+
+    const resizeCanvas = () => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+
+      if (canvas.width !== width * dpr || canvas.height !== height * dpr) {
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+      }
+      renderFrame(Math.round(currentFrame));
+    };
+
+    const loadFrame = (index: number) => {
+      if (images[index]) return;
+      const img = new Image();
+      const frameNum = String(index + 1).padStart(3, "0");
+      img.src = `/flower_frames/${frameNum}.webp`;
+      img.onload = () => {
+        images[index] = img;
+        if (index === 0 && lastRenderedIndex === -1) {
+          renderFrame(0);
+        }
+      };
+    };
+
+    // Preload first 40 frames immediately
+    for (let i = 0; i < Math.min(40, FRAME_COUNT); i++) {
+      loadFrame(i);
+    }
+
+    // Lazy load the remaining frames
+    const lazyTimer = setTimeout(() => {
+      for (let i = 40; i < FRAME_COUNT; i++) {
+        loadFrame(i);
+      }
+    }, 100);
+
+    const handleScroll = () => {
       const scrollTop = window.scrollY || document.documentElement.scrollTop;
       const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
       if (scrollHeight <= 0) return;
 
       const progress = Math.max(0, Math.min(1, scrollTop / scrollHeight));
-      targetFrame = progress * 150; // Map progress to frame index (0 to 150)
+      targetFrame = progress * (FRAME_COUNT - 1);
     };
 
-    const updateVideoSeek = () => {
-      const video = videoRef.current;
-      if (window.innerWidth >= 768 && video && video.duration) {
-        // Smoothly interpolate current frame position
-        currentFrame += (targetFrame - currentFrame) * lerpFactor;
-        
-        const frameDuration = video.duration / 150;
-        const targetTime = currentFrame * frameDuration;
-        
-        // Seek only if targetTime is a meaningful change and video isn't already seeking (prevents Safari/Firefox lag)
-        if (!video.seeking && Math.abs(video.currentTime - targetTime) > (frameDuration / 4)) {
-          try {
-            if (targetTime >= 0 && targetTime <= video.duration) {
-              video.currentTime = targetTime;
-            }
-          } catch (e) {
-            console.warn("Video seeking failed:", e);
-          }
-        }
+    const animationLoop = () => {
+      currentFrame += (targetFrame - currentFrame) * lerpFactor;
+      const frameToDraw = Math.round(currentFrame);
+
+      if (frameToDraw !== lastRenderedIndex) {
+        renderFrame(frameToDraw);
       }
-      animationFrameId = requestAnimationFrame(updateVideoSeek);
+
+      animationFrameId = requestAnimationFrame(animationLoop);
     };
 
-    // Listen to scroll events
     window.addEventListener("scroll", handleScroll, { passive: true });
-    
-    // Listen to resize events
-    const handleResize = () => {
-      handleScroll();
-    };
-    window.addEventListener("resize", handleResize);
-    
-    // Ensure initial scroll position is synced once video metadata is available
-    const video = videoRef.current;
-    if (video) {
-      if (video.readyState >= 1) {
-        handleScroll();
-      }
-      video.addEventListener("loadedmetadata", handleScroll);
-    }
-    
-    // Trigger scroll logic initially
+    window.addEventListener("resize", resizeCanvas);
+
+    resizeCanvas();
     handleScroll();
-    
-    // Start smooth animation loop
-    animationFrameId = requestAnimationFrame(updateVideoSeek);
+    animationLoop();
 
     return () => {
+      clearTimeout(lazyTimer);
       window.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("resize", handleResize);
-      if (video) {
-        video.removeEventListener("loadedmetadata", handleScroll);
-      }
+      window.removeEventListener("resize", resizeCanvas);
       cancelAnimationFrame(animationFrameId);
     };
   }, []);
@@ -223,17 +275,11 @@ export default function About() {
 
   return (
     <div className="min-h-screen w-full overflow-x-hidden relative">
-      {/* Scroll-driven blooming flower background video */}
-      <video
-        ref={videoRef}
-        playsInline
-        muted
-        preload="auto"
-        className="hidden md:block fixed inset-0 w-screen h-screen object-cover z-0 pointer-events-none opacity-20"
-      >
-        <source src="/flower.mp4" type="video/mp4" />
-        Your browser does not support the video tag.
-      </video>
+      {/* Scroll-driven blooming flower background canvas */}
+      <canvas
+        ref={canvasRef}
+        className="fixed inset-0 w-full h-full object-cover z-0 pointer-events-none opacity-20 md:opacity-25"
+      />
 
       {/* Content wrapper */}
       <div className="relative z-10">
